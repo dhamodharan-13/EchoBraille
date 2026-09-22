@@ -1,0 +1,317 @@
+# 🌟 EchoBraille — Intelligent AI-Powered Voice-to-Braille Assistive System
+
+> **Smart India Hackathon 2026 (SIH) — Team EchoBraille**  
+> **Problem Statement ID:** SIH26215 | **Category:** Hardware / MedTech / HealthTech  
+> *"Bridging conversational AI and the deafblind community through affordable, real-time, 6-dot tactile communication."*
+
+---
+
+## 📑 Table of Contents
+1. [Executive Summary](#-executive-summary)
+2. [Problem Statement & Background](#-problem-statement--background)
+3. [The EchoBraille Solution](#-the-echobraille-solution)
+4. [End-to-End System Architecture](#-end-to-end-system-architecture)
+5. [Hardware Design & Component Breakdown](#-hardware-design--component-breakdown)
+6. [Pinout & Wiring Schematics](#-pinout--wiring-schematics)
+7. [Firmware Architecture (`echobraille_bluetooth.ino`)](#-firmware-architecture-echobraille_bluetoothino)
+8. [Web Application & Software Architecture](#-web-application--software-architecture)
+9. [AI & Speech Integration (Latency Optimization)](#-ai--speech-integration-latency-optimization)
+10. [Bill of Materials (BOM) & Cost Feasibility](#-bill-of-materials-bom--cost-feasibility)
+11. [Step-by-Step Installation & User Guide](#-step-by-step-installation--user-guide)
+12. [Future Scope & Development Roadmap](#-future-scope--development-roadmap)
+13. [References & Research](#-references--research)
+
+---
+
+## 📌 Executive Summary
+
+**EchoBraille** is an intelligent, low-cost, voice-to-tactile assistive communication system designed for individuals who are deafblind or severely visually/auditorily impaired. 
+
+Traditional artificial intelligence tools (voice assistants, chatbots, LLMs) communicate exclusively through visual text or auditory speech. For a deafblind user, these interfaces remain completely inaccessible. Furthermore, commercial refreshable Braille displays cost between **₹1,50,000 to ₹4,00,000 INR ($1,800 to $5,000 USD)**, putting independent digital access out of reach for over 95% of the population who need it.
+
+EchoBraille changes this paradigm by combining:
+1. A **hands-free Web Speech & Google Gemini 1.5 Flash AI app** that captures spoken queries and formulates concise answers.
+2. An **intelligent Braille translation engine** that maps characters and numbers into standard 6-dot Braille bitmasks.
+3. A **modular ESP32 hardware actuator (≈ ₹1,500 INR)** that drives 6 servo-controlled tactile pins via a PCA9685 driver, physically displaying each character one-by-one under the user's fingertip, accompanied by an on-device 128x64 OLED display for educator/companion monitoring.
+
+---
+
+## ⚠️ Problem Statement & Background
+
+Worldwide, over **1.5 Billion people** live with hearing loss and **2.2 Billion people** have vision impairment (WHO data). A significant subset experiences combined deafblindness, cutting off conventional avenues of communication.
+
+### Core Challenges Identified:
+* **The Multimodal AI Divide:** AI chatbots like ChatGPT, Gemini, and Claude excel at voice and screen conversation but offer zero tactile actuation.
+* **Prohibitive Hardware Cost:** Commercial electronic Braille displays use expensive piezoelectric bender reeds, making them fragile and costly.
+* **Portability & Setup Friction:** Specialized assistive hardware often requires dedicated proprietary operating systems, screen readers, and desktop serial drivers.
+
+> [!IMPORTANT]  
+> **EchoBraille's Mission:** Democratize access to modern conversational AI by engineering a portable, open-standard, electromechanical Braille display that operates directly from any smartphone or browser for under **₹1,500 INR**.
+
+---
+
+## 💡 The EchoBraille Solution
+
+```mermaid
+flowchart LR
+    A[Spoken Voice / Type Query] --> B[Web Speech API / Browser]
+    B --> C[Gemini 1.5 Flash / Offline Engine]
+    C --> D[6-Dot Braille Translation Engine]
+    D -->|Bluetooth / WebSerial 'TEXT\n'| E[ESP32 Microcontroller]
+    E -->|I2C 0x40 PWM| F[PCA9685 16-Ch Driver]
+    E -->|I2C 0x3C| G[0.96" SSD1306 OLED Display]
+    F -->|PWM 50Hz| H[6 Micro Servos: Tactile Dots 1-6]
+    H --> I[User Senses Physical Braille via Touch]
+```
+
+### Key Capabilities:
+- **Speech-to-Braille Conversion:** Real-time hands-free speech transcription converting sentences directly into physical tactile motion.
+- **Concise AI Responses:** System prompt guardrails ensure conversational AI generates tight, 15-word answers optimized for tactile reading speed.
+- **Physical 6-Servo Actuation:** 6 tactile pins driven by micro servos represent Standard 6-Dot Braille cells (Dots 1 to 6).
+- **Dual Visual Confirmation:** On-device OLED display alongside an interactive 3D web actuator preview so teachers, family members, and judges can verify each letter in real time.
+- **Zero-Install Web App:** Operates directly over **WebSerial** (USB) and **Web Bluetooth BLE** on desktop and mobile browsers.
+
+---
+
+## 🏗️ End-to-End System Architecture
+
+The EchoBraille system is structured into two decoupled layers: the **Software/AI Intelligence Layer** and the **Hardware Actuator Layer**.
+
+```mermaid
+graph TB
+    subgraph "Software Layer (Smartphone / Laptop Web App)"
+        UI[Interactive Web Interface - HTML5/CSS3]
+        STT[Browser Web Speech API]
+        AI[Gemini 1.5 Flash Cloud / Offline Fallback]
+        ENC[Grade-1 Braille Encoder & Bitmask Matrix]
+        COMM[WebSerial & Web Bluetooth GATT Client]
+        SIM[3D Tactile Pin & OLED Simulator]
+    end
+
+    subgraph "Hardware Actuator Layer (ESP32 Module)"
+        ESP[ESP32 Microcontroller Board]
+        BT[Bluetooth Classic 'EchoBraille' / USB CDC]
+        PARSER[Character & Number-Sign Parser]
+        PCA[PCA9685 12-Bit PWM Driver @ 0x40]
+        OLED[SSD1306 128x64 Monochrome OLED @ 0x3C]
+        PINS[6x Micro Servos (Channels 0-5) -> Tactile Pins]
+    end
+
+    STT --> UI
+    UI --> AI
+    AI --> ENC
+    ENC --> SIM
+    ENC --> COMM
+    COMM -->|Wireless BT / USB Serial @ 115200 Baud| BT
+    BT --> PARSER
+    PARSER --> PCA
+    PARSER --> OLED
+    PCA --> PINS
+```
+
+---
+
+## 🔌 Hardware Design & Component Breakdown
+
+```text
+               +-------------------------------------------+
+               |          ESP32 DEV MODULE / XIAO          |
+               |                                           |
+               |   [GPIO 21 / SDA] -----> I2C Data Line    |
+               |   [GPIO 22 / SCL] -----> I2C Clock Line   |
+               |   [GND]           -----> Common Ground    |
+               |   [5V / VBUS]     -----> Logic VCC        |
+               +-------------------------------------------+
+                                     |
+               +---------------------+---------------------+
+               |                                           |
+               v                                           v
+   +-----------------------+                   +-----------------------+
+   |  PCA9685 PWM DRIVER   |                   |  SSD1306 OLED (128x64)|
+   |  I2C Address: 0x40    |                   |  I2C Address: 0x3C    |
+   +-----------------------+                   +-----------------------+
+     |   |   |   |   |   |                       | Visual confirmation |
+    CH0 CH1 CH2 CH3 CH4 CH5                      | of letter + dots    |
+     |   |   |   |   |   |                       +---------------------+
+     v   v   v   v   v   v
+    [Servo 3] [Servo 2] [Servo 1] [Servo 4] [Servo 5] [Servo 6]
+    (Dot 3)   (Dot 2)   (Dot 1)   (Dot 4)   (Dot 5)   (Dot 6)
+```
+
+### Component Details:
+1. **ESP32 Dual-Core Microcontroller:**
+   - Handles Bluetooth Serial RFCOMM protocol (`BluetoothSerial`), text buffer streaming, and I2C command dispatch.
+2. **PCA9685 16-Channel 12-Bit PWM Servo Driver:**
+   - Communicates via I2C at 400kHz.
+   - Operates servos at 50Hz with 12-bit pulse width resolution (4096 steps), preventing CPU interrupts on the ESP32.
+3. **6 Micro Servos (SG90 or linear actuators):**
+   - Arranged in the standard 2×3 Braille grid.
+   - Rotates between **0° (Home / Retracted)** and **55° (Raised / Elevated)**.
+4. **0.96" / 1.3" SSD1306/SH1106 I2C OLED Display:**
+   - Displays the current Roman letter (size 4 font) on the left and a graphical 6-dot Braille diagram on the right.
+
+---
+
+## ⚡ Pinout & Wiring Schematics
+
+### 1. I2C Bus Connections (Shared Bus)
+
+| Peripheral Pin | ESP32 Pin | Logic Level | Description |
+| :--- | :--- | :--- | :--- |
+| **PCA9685 SDA** | `GPIO 21` (D4 on XIAO) | 3.3V | I2C Serial Data |
+| **PCA9685 SCL** | `GPIO 22` (D5 on XIAO) | 3.3V | I2C Serial Clock |
+| **PCA9685 VCC** | `3.3V` or `5V` | Logic Power | Driver logic power |
+| **PCA9685 V+** | `5V (External 2A PSU)` | 5V Servo Power | High-current power for 6 servos |
+| **OLED SDA** | `GPIO 21` | 3.3V | OLED Data line |
+| **OLED SCL** | `GPIO 22` | 3.3V | OLED Clock line |
+| **GND (All)** | `GND` | Common Ground | Tie ESP32, PCA9685, and battery GND together |
+
+### 2. Braille Dot-to-Servo Mapping
+
+Standard Braille is indexed in two vertical columns:
+- **Left Column:** Dot 1 (top), Dot 2 (middle), Dot 3 (bottom)
+- **Right Column:** Dot 4 (top), Dot 5 (middle), Dot 6 (bottom)
+
+```text
+  [ Dot 1 ]  (o) ( )  [ Dot 4 ]
+  [ Dot 2 ]  (o) (o)  [ Dot 5 ]
+  [ Dot 3 ]  ( ) ( )  [ Dot 6 ]
+           Letter "H"
+```
+
+| Braille Dot | Physical Position | Firmware Servo Index | PCA9685 Channel | Home Angle | Raised Angle |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| **Dot 1** | Top-Left | Servo 0 | Channel `2` | `0°` | `55°` |
+| **Dot 2** | Mid-Left | Servo 1 | Channel `1` | `0°` | `55°` |
+| **Dot 3** | Bot-Left | Servo 2 | Channel `0` | `0°` | `55°` |
+| **Dot 4** | Top-Right | Servo 3 | Channel `3` | `180°` | `125°` |
+| **Dot 5** | Mid-Right | Servo 4 | Channel `4` | `180°` | `125°` |
+| **Dot 6** | Bot-Right | Servo 5 | Channel `5` | `180°` | `125°` |
+
+---
+
+## 💻 Firmware Architecture (`echobraille_bluetooth.ino`)
+
+The firmware ([`firmware/echobraille_bluetooth/echobraille_bluetooth.ino`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/firmware/echobraille_bluetooth/echobraille_bluetooth.ino)) is written in optimized C++ for Arduino-ESP32.
+
+### Core Firmware Subsystems:
+1. **Bluetooth & USB Serial Listener (`loop()`):**
+   - Polls `Serial.available()` and `SerialBT.available()`.
+   - Buffers incoming stream characters until a newline character (`\n`) is encountered.
+2. **Selective Servo Transition Engine (`changeBraille()`):**
+   - Compares target dot states against `currentDots[6]`.
+   - **Mechanical Optimization:** Only moves servos whose states actually change between consecutive characters, reducing motor wear, power consumption, and mechanical chatter.
+3. **Number-Sign Automation (`displayNumberSign()`):**
+   - Standard English Braille represents digits `1-9, 0` using letter patterns `A-J` prefixed by the universal **Braille Number Sign** (Dots 3-4-5-6 / `⠼`).
+   - The firmware automatically detects numerical characters and inserts the `#` number prefix before the first digit.
+4. **OLED Visual Renderer (`drawBrailleOLED()`):**
+   - Clears display and draws the letter at (x=10, y=15) using 4x font scaling.
+   - Draws a vertical dividing line at x=55.
+   - Draws 6 circles representing the Braille cell: filled circles (`fillCircle`) for elevated dots, open circles (`drawCircle`) for flat dots.
+
+---
+
+## 🌐 Web Application & Software Architecture
+
+The web application is located in [`web_app/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/web_app) and runs in any modern browser without needing an APK compilation or app store review.
+
+### File Structure:
+* [`web_app/index.html`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/web_app/index.html) — Semantic HTML5 application containing 4 tabs:
+  1. **AI Assistant:** Voice input, chat stream, and 3D real-time servo actuator simulator.
+  2. **ESP32 Hardware:** Bluetooth/Serial connection manager, PCA9685 calibration sliders, and serial monitor.
+  3. **Braille Studio:** Interactive dot-to-letter tester and full clickable A–Z / 0–9 Braille dictionary.
+  4. **SIH Specs:** Technical specifications and cost breakdown.
+* [`web_app/styles.css`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/web_app/styles.css) — Modern slate dark glassmorphism design system with neon cyan (`#00f2fe`) and amber (`#ffb800`) accents, responsive grids, and high-contrast accessibility mode.
+* [`web_app/app.js`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/web_app/app.js) — Unified client controller handling Web Speech API, Google Gemini Flash API, WebSerial API, and Web Bluetooth GATT protocols.
+
+---
+
+## 🧠 AI & Speech Integration (Latency Optimization)
+
+### The Tactile Latency Paradox
+Tactile reading is inherently slower than listening or visual reading. Reading a 60-word paragraph at 1 second per letter would take over 4 minutes of physical servo actuation!
+
+### EchoBraille's 3-Tier Latency Reduction Strategy:
+1. **Strict System Prompt Guardrails:**
+   ```text
+   "You are EchoBraille AI, an assistive voice-to-Braille assistant for deafblind users. 
+   Answer the query concisely in under 15 words using simple English words only. 
+   No markdown, no emojis, no special symbols."
+   ```
+2. **Streaming Pipeline:**
+   - Uses `gemini-1.5-flash:generateContent` with low temperature (`0.2`) and token cap (`35`).
+   - Streams text into the hardware queue so that as soon as the first character arrives, the servos begin actuating while subsequent words buffer in memory.
+3. **Instant Offline Knowledge Base (< 10ms):**
+   - Pre-indexes emergency keywords (`"help"`, `"water"`, `"doctor"`, `"sos"`), live dynamic time/date calculations (`"what time is it?"`), greetings, and spelling routines to execute offline in under 10 milliseconds without network access.
+
+---
+
+## 💰 Bill of Materials (BOM) & Cost Feasibility
+
+EchoBraille achieves a **99% cost reduction** compared to commercial electronic Braille readers:
+
+| Item | Component Description | Qty | Approx. Cost (INR) | Approx. Cost (USD) |
+| :---: | :--- | :---: | :---: | :---: |
+| 1 | ESP32-S3 or ESP32 Dev Board | 1 | ₹380 | $4.50 |
+| 2 | PCA9685 16-Channel 12-Bit PWM Driver | 1 | ₹180 | $2.15 |
+| 3 | Micro SG90 9g Servos / Micro Actuators | 6 | ₹720 (₹120 ea) | $8.60 |
+| 4 | 0.96" SSD1306 I2C OLED Display | 1 | ₹160 | $1.90 |
+| 5 | Custom 3D Printed Braille Cap & Housing | 1 | ₹60 | $0.70 |
+| -- | **Total Prototype Cost** | -- | **≈ ₹1,500 INR** | **≈ $17.85 USD** |
+| -- | **Commercial Braille Display (Reference)** | -- | **₹1,50,000+ INR** | **$1,800+ USD** |
+
+---
+
+## 🚀 Step-by-Step Installation & User Guide
+
+### 1. Flashing the ESP32 Hardware
+1. Open **Arduino IDE**.
+2. Open [`firmware/echobraille_bluetooth/echobraille_bluetooth.ino`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/firmware/echobraille_bluetooth/echobraille_bluetooth.ino).
+3. Install required libraries (**Tools → Manage Libraries**):
+   - `Adafruit PWMServoDriver`
+   - `Adafruit SSD1306` & `Adafruit GFX`
+   - `BluetoothSerial` (comes bundled with ESP32 board package).
+4. Connect your ESP32 via USB, select your board (`ESP32 Dev Module`), select the COM Port, and click **Upload (➔)**.
+
+### 2. Launching the Web Application
+1. Start the local server from your project folder:
+   ```bash
+   python -m http.server 8000 --directory web_app
+   ```
+2. Open your browser to `http://localhost:8000`.
+3. To open on a mobile phone on the same Wi-Fi, navigate to:
+   `http://<YOUR_PC_IP_ADDRESS>:8000`
+
+### 3. Connecting Hardware in the App
+* **Via USB Cable:** Go to the **ESP32 Hardware** tab $\rightarrow$ click **Connect USB WebSerial** $\rightarrow$ select your ESP32 COM port.
+* **Via Bluetooth:** Pair your phone/PC with `"EchoBraille"` in Bluetooth settings $\rightarrow$ open app $\rightarrow$ click **Pair Web Bluetooth BLE**.
+
+---
+
+## 🔮 Future Scope & Development Roadmap
+
+1. **Multi-Cell Refreshable Braille Strip:**
+   - Transitioning from a single refreshable 6-dot cell to an 8-cell or 16-cell tactile strip, allowing entire words to be read simultaneously.
+2. **Electromagnetic Solenoid / Piezo Actuation:**
+   - Replacing micro servos with miniature linear latching solenoids to achieve sub-50ms refresh rates and a pocket-sized form factor.
+3. **Grade-2 Braille Contractions & Regional Languages:**
+   - Implementing Grade-2 Braille abbreviations (e.g. `⠯` for "and", `⠮` for "the").
+   - Expanding the encoder to support Indian regional languages via **Bharati Braille** standards (Hindi, Tamil, Marathi, Telugu, Bengali).
+4. **Haptic Glove Integration:**
+   - Embedding micro ERM vibration motors into a wearable smart glove for deafblind tactile sensory feedback on the move.
+
+---
+
+## 📚 References & Research
+
+* **World Health Organization (WHO):** *Deafness and Hearing Loss Report (2024)* & *Blindness and Vision Impairment Statistics*.
+* **IEEE Research:** *Tactile Displays as Refreshable Braille Displays for the Visually Impaired* (IEEE Document ID: 1389689).
+* **Smart India Hackathon 2026:** Problem Statement SIH26215 — Students Innovation in MedTech / HealthTech.
+* **National Braille Association:** *Standard English Braille (EBAE) & Unified English Braille (UEB) Guidelines*.
+
+---
+
+<p align="center">
+  <b>EchoBraille — Making AI Accessible, One Touch at a Time.</b><br>
+  Designed & Built with ❤️ for SIH 2026
+</p>
