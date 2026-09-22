@@ -93,12 +93,15 @@ function switchTab(tabId) {
     state.currentTab = tabId;
     
     // Update navigation button active state
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.dock-tab-btn, .nav-btn').forEach(btn => btn.classList.remove('active'));
     const activeBtn = document.getElementById(`nav-${tabId}-btn`);
     if (activeBtn) activeBtn.classList.add('active');
     
     // Update tab panes
-    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
+    document.querySelectorAll('.view-panel, .tab-pane').forEach(pane => {
+        pane.classList.remove('active');
+        pane.classList.add('hidden');
+    });
     const activePane = document.getElementById(`pane-${tabId}`);
     if (activePane) {
         activePane.classList.remove('hidden');
@@ -311,15 +314,17 @@ async function handleUserMessage() {
 
 function appendMessageBubble(sender, text) {
     const container = document.getElementById('chat-messages-container');
+    if (!container) return null;
+    
     const bubbleId = `msg-${Date.now()}`;
     const bubbleDiv = document.createElement('div');
-    bubbleDiv.className = `chat-bubble ${sender}-bubble`;
+    bubbleDiv.className = `chat-message-row ${sender}`;
     bubbleDiv.id = bubbleId;
 
     const avatarText = sender === 'ai' ? 'AI' : 'YOU';
     bubbleDiv.innerHTML = `
-        <div class="avatar ${sender}-avatar">${avatarText}</div>
-        <div class="bubble-content">
+        <div class="chat-avatar ${sender}">${avatarText}</div>
+        <div class="bubble-body">
             <p>${escapeHTML(text)}</p>
         </div>
     `;
@@ -332,7 +337,7 @@ function appendMessageBubble(sender, text) {
 function updateMessageBubble(bubbleId, newText) {
     const bubble = document.getElementById(bubbleId);
     if (bubble) {
-        const p = bubble.querySelector('.bubble-content p');
+        const p = bubble.querySelector('.bubble-body p');
         if (p) p.innerHTML = escapeHTML(newText);
     }
 }
@@ -1005,15 +1010,15 @@ function updateHardwareStatusUI(isConnected, labelText) {
     }
 
     if (isConnected) {
-        pulseDot.className = "status-pulse online";
+        pulseDot.className = "status-indicator-dot online";
         labelTextEl.textContent = labelText;
-        statusCircle.className = "status-indicator-big connected";
+        statusCircle.className = "status-ring-large connected";
         metaTitle.textContent = "ESP32 Connected & Active";
-        metaDesc.textContent = `Hardware receiving 6-dot Braille packets via ${state.hardwareType.toUpperCase()}.`;
+        metaDesc.textContent = `Hardware receiving 6-dot Braille packets via ${state.hardwareType ? state.hardwareType.toUpperCase() : 'BLE'}.`;
     } else {
-        pulseDot.className = "status-pulse offline";
+        pulseDot.className = "status-indicator-dot offline";
         labelTextEl.textContent = "ESP32 Offline";
-        statusCircle.className = "status-indicator-big disconnected";
+        statusCircle.className = "status-ring-large disconnected";
         metaTitle.textContent = "Device Disconnected";
         metaDesc.textContent = "Click connect below to pair with EchoBraille ESP32 Bluetooth BLE or USB WebSerial COM port.";
     }
@@ -1147,14 +1152,15 @@ function populateBrailleStudioChart() {
         if (char === '#' || char === ' ') continue;
         const glyph = getBrailleUnicodeGlyph(dots);
         const card = document.createElement('div');
-        card.className = 'alpha-card';
+        card.className = 'char-card-tile';
         card.innerHTML = `
-            <span class="alpha-char">${char}</span>
-            <span class="alpha-braille">${glyph}</span>
+            <span class="tile-alpha-letter">${char}</span>
+            <span class="tile-braille-symbol">${glyph}</span>
         `;
         card.onclick = () => {
             loadBrailleStream(char);
             startBrailleStream();
+            switchTab('actuator');
         };
         grid.appendChild(card);
     }
