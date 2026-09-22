@@ -47,15 +47,18 @@ void processCommand(String input);
       void onDisconnect(BLEServer* pServer) {
           bleDeviceConnected = false;
           Serial.println("[BLE] Web Bluetooth client disconnected.");
+          BLEDevice::startAdvertising();
+          Serial.println("[BLE] Advertising restarted immediately. Ready for reconnect.");
       }
   };
 
   class EchoBrailleRxCallbacks : public BLECharacteristicCallbacks {
       void onWrite(BLECharacteristic *pCharacteristic) {
-          String rxValue = pCharacteristic->getValue();
-          if (rxValue.length() > 0) {
-              for (size_t i = 0; i < rxValue.length(); i++) {
-                  char c = rxValue[i];
+          uint8_t* pData = pCharacteristic->getData();
+          size_t length = pCharacteristic->getLength();
+          if (pData != NULL && length > 0) {
+              for (size_t i = 0; i < length; i++) {
+                  char c = (char)pData[i];
                   if (c == '\n' || c == '\r') {
                       if (bleIncomingBuffer.length() > 0) {
                           processCommand(bleIncomingBuffer);
@@ -71,7 +74,7 @@ void processCommand(String input);
 
   void sendBleNotification(const String &msg) {
       if (bleDeviceConnected && pBleTxChar != NULL) {
-          pBleTxChar->setValue(msg.c_str());
+          pBleTxChar->setValue((uint8_t*)msg.c_str(), msg.length());
           pBleTxChar->notify();
       }
   }
@@ -1281,7 +1284,7 @@ void loop()
   if (!bleDeviceConnected && oldBleDeviceConnected)
   {
     delay(200); // Give the BLE stack time to clear
-    pBleServer->startAdvertising(); // Restart advertising so web app can reconnect
+    BLEDevice::startAdvertising(); // Restart advertising so web app can reconnect
     Serial.println("[BLE] Advertising restarted. Waiting for connection...");
     oldBleDeviceConnected = bleDeviceConnected;
   }

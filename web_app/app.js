@@ -616,23 +616,101 @@ const NORDIC_UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 const NORDIC_UART_RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Browser -> ESP32 Write
 const NORDIC_UART_TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // ESP32 -> Browser Notify
 
+// --- Thread-Safe BLE Transmit Queue & MTU Slicing ---
+let bleWriteQueue = [];
+let isBleWriting = false;
+
+async function writeBlePayload(payloadString) {
+    if (!state.bleRxCharacteristic) return;
+
+    return new Promise((resolve, reject) => {
+        bleWriteQueue.push({ payload: payloadString, resolve, reject });
+        processBleQueue();
+    });
+}
+
+async function processBleQueue() {
+    if (isBleWriting || bleWriteQueue.length === 0) return;
+    isBleWriting = true;
+
+    while (bleWriteQueue.length > 0) {
+        const item = bleWriteQueue.shift();
+        try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(item.payload);
+            const CHUNK_SIZE = 20; // Safe Standard BLE ATT payload per packet (prevents truncation)
+
+            for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+                const chunk = data.slice(i, i + CHUNK_SIZE);
+                if (state.bleRxCharacteristic.writeValueWithoutResponse) {
+                    await state.bleRxCharacteristic.writeValueWithoutResponse(chunk);
+                } else {
+                    await state.bleRxCharacteristic.writeValue(chunk);
+                }
+                // Yield briefly between consecutive packets to prevent ESP32 FIFO overflow
+                if (i + CHUNK_SIZE < data.length) {
+                    await new Promise(r => setTimeout(r, 20));
+                }
+            }
+            item.resolve();
+        } catch (err) {
+            console.error("BLE queued packet transmission error:", err);
+            item.reject(err);
+        }
+    }
+
+    isBleWriting = false;
+}
+
 async function connectWebBluetooth() {
     if (!navigator.bluetooth) {
-        alert("Web Bluetooth is not supported in your current browser.\n\nPlease use Google Chrome, Microsoft Edge, Opera, or Bluefy (iOS).\nNote: Web Bluetooth requires an HTTPS connection or http://localhost.");
+        const isSecure = window.isSecureContext;
+        let errMsg = "Web Bluetooth is not supported in your current browser.";
+        if (!isSecure) {
+            errMsg += "\n\n⚠️ INSECURE CONTEXT: Web Bluetooth requires HTTPS or http://localhost.\nIf accessing via LAN IP (e.g. 192.168.x.x), please open Chrome and configure:\nchrome://flags/#unsafely-treat-insecure-origin-as-secure";
+        } else {
+            errMsg += "\n\nPlease use Google Chrome, Microsoft Edge, Opera, or Bluefy (iOS).";
+        }
+        alert(errMsg);
         return;
     }
 
-    try {
-        logSerial("[BLE] Requesting Bluetooth device 'EchoBraille'...");
-        const device = await navigator.bluetooth.requestDevice({
-            filters: [
-                { name: 'EchoBraille' },
-                { namePrefix: 'Echo' }
-            ],
-            optionalServices: [NORDIC_UART_SERVICE_UUID]
-        });
+    // Cleanly close any existing connection before starting a new scan
+    if (state.isHardwareConnected && state.hardwareType === 'bluetooth') {
+        logSerial("[BLE] Disconnecting existing Bluetooth session...");
+        await disconnectHardware();
+        await new Promise(r => setTimeout(r, 300));
+    }
 
-        logSerial(`[BLE] Device selected: "${device.name}". Connecting to GATT Server...`);
+    try {
+        logSerial("[BLE] Scanning for EchoBraille (NUS Service / Name)...");
+        let device = null;
+        try {
+            // Primary attempt: Filter specifically for EchoBraille name or Nordic UART Service
+            device = await navigator.bluetooth.requestDevice({
+                filters: [
+                    { name: 'EchoBraille' },
+                    { namePrefix: 'Echo' },
+                    { services: [NORDIC_UART_SERVICE_UUID] }
+                ],
+                optionalServices: [NORDIC_UART_SERVICE_UUID]
+            });
+        } catch (filterErr) {
+            if (filterErr.name === 'NotFoundError') {
+                logSerial("[BLE] Device selection cancelled by user.");
+                return;
+            }
+            logSerial(`[BLE] Filtered scan notice: ${filterErr.message}. Trying open scan...`);
+            // Fallback attempt: Accept all devices if name filter isn't matching scan response
+            device = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: [NORDIC_UART_SERVICE_UUID]
+            });
+        }
+
+        if (!device) return;
+
+        logSerial(`[BLE] Device selected: "${device.name || 'EchoBraille'}". Connecting to GATT Server...`);
         
         // Listen for sudden disconnection
         device.addEventListener('gattserverdisconnected', onBLEDisconnected);
@@ -659,6 +737,10 @@ async function connectWebBluetooth() {
             console.warn("BLE TX notification setup skipped:", txErr);
         }
 
+        // Reset write queue
+        bleWriteQueue = [];
+        isBleWriting = false;
+
         state.isHardwareConnected = true;
         state.hardwareType = 'bluetooth';
         updateHardwareStatusUI(true, "EchoBraille BLE Connected");
@@ -669,7 +751,7 @@ async function connectWebBluetooth() {
         } else {
             console.error("Bluetooth connection error:", err);
             logSerial(`[ERR] BLE connection failed: ${err.message}`);
-            alert(`Bluetooth Connection Error: ${err.message}\n\nTip: Ensure your ESP32 is powered on and advertising 'EchoBraille'.`);
+            alert(`Bluetooth Connection Error: ${err.message}\n\nTips:\n1. Ensure ESP32 is powered ON.\n2. Ensure echobraille_bluetooth.ino is flashed with #define USE_BLE 1.\n3. Make sure no other phone/tab is currently connected to the ESP32.`);
         }
         updateHardwareStatusUI(false, "ESP32 Offline");
     }
@@ -690,6 +772,8 @@ function onBLEDisconnected() {
     state.bleServer = null;
     state.bleRxCharacteristic = null;
     state.bleTxCharacteristic = null;
+    bleWriteQueue = [];
+    isBleWriting = false;
     updateHardwareStatusUI(false, "ESP32 Offline");
 }
 
@@ -716,6 +800,8 @@ async function disconnectHardware() {
     }
     state.isHardwareConnected = false;
     state.hardwareType = null;
+    bleWriteQueue = [];
+    isBleWriting = false;
     updateHardwareStatusUI(false, "ESP32 Offline");
     logSerial("[HW] Hardware disconnected.");
 }
@@ -780,13 +866,7 @@ async function sendHardwareTextCommand(text) {
         }
     } else if (state.hardwareType === 'bluetooth' && state.bleRxCharacteristic) {
         try {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(formattedPayload);
-            if (state.bleRxCharacteristic.writeValueWithoutResponse) {
-                await state.bleRxCharacteristic.writeValueWithoutResponse(data);
-            } else {
-                await state.bleRxCharacteristic.writeValue(data);
-            }
+            await writeBlePayload(formattedPayload);
             logSerial(`[TX->BLE] Sent: "${text}"`);
         } catch (err) {
             console.error("BLE write failed:", err);
