@@ -13,3 +13,15 @@ Desktop.ini
 build/
 *.bin
 *.hex
+
+# Node dependencies
+node_modules/
+package-lock.json
+
+# Android build cache and outputs
+.gradle/
+android/.gradle/
+android/build/
+android/app/build/
+android/app/build.gradle.cache/
+*.apk

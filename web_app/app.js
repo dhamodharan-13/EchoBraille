@@ -2,6 +2,13 @@
    ECHOBRAILLE — APPLICATION LOGIC & HARDWARE CONTROLLER (app.js)
    ========================================================================== */
 
+// --- Native App Environment Helper (Capacitor) ---
+const isNativeApp = () => {
+    return typeof window.Capacitor !== 'undefined' && 
+           typeof window.Capacitor.isNativePlatform === 'function' && 
+           window.Capacitor.isNativePlatform();
+};
+
 // --- Global Application State ---
 const state = {
     currentTab: 'assistant',
@@ -13,6 +20,7 @@ const state = {
     bleServer: null,
     bleRxCharacteristic: null,
     bleTxCharacteristic: null,
+    nativeBleDeviceId: null, // Device ID for native Capacitor BLE
     
     // AI & Speech State
     isListening: false,
@@ -137,8 +145,13 @@ function saveSettings() {
     closeSettingsModal();
 }
 
-// --- Speech Recognition (Web Speech API) ---
+// --- Speech Recognition (Web Speech API & Capacitor Native Speech Recognition) ---
 function initSpeechRecognition() {
+    if (isNativeApp() && window.Capacitor?.Plugins?.SpeechRecognition) {
+        logSerial("[NATIVE] Android Speech Recognition plugin ready.");
+        return;
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         state.speechRecognition = new SpeechRecognition();
@@ -175,11 +188,60 @@ function initSpeechRecognition() {
             }
         };
     } else {
-        console.warn("Web Speech API not supported in this browser.");
+        console.warn("Web Speech API not supported in standard browser mode.");
     }
 }
 
-function startVoiceInput() {
+async function startVoiceInput() {
+    // Native Capacitor Android Speech Recognition
+    if (isNativeApp() && window.Capacitor?.Plugins?.SpeechRecognition) {
+        const SpeechPlugin = window.Capacitor.Plugins.SpeechRecognition;
+        try {
+            const hasPerm = await SpeechPlugin.hasPermissions();
+            if (!hasPerm.speechRecognition) {
+                await SpeechPlugin.requestPermissions();
+            }
+
+            state.isListening = true;
+            document.getElementById('mic-active-overlay').classList.remove('hidden');
+            document.getElementById('mic-button').classList.add('recording');
+            document.getElementById('hero-mic-label').textContent = "Listening...";
+
+            SpeechPlugin.removeAllListeners?.();
+            SpeechPlugin.addListener('partialResults', (data) => {
+                if (data.matches && data.matches.length > 0) {
+                    const transcript = data.matches[0];
+                    document.getElementById('chat-input-field').value = transcript;
+                    document.getElementById('mic-listening-text').textContent = `"${transcript}"`;
+                }
+            });
+
+            const result = await SpeechPlugin.start({
+                language: "en-US",
+                maxResults: 1,
+                prompt: "Speak to EchoBraille",
+                partialResults: true,
+                popup: false
+            });
+
+            if (result && result.matches && result.matches.length > 0) {
+                const finalTranscript = result.matches[0];
+                document.getElementById('chat-input-field').value = finalTranscript;
+            }
+            stopVoiceInput();
+            const inputVal = document.getElementById('chat-input-field').value.trim();
+            if (inputVal.length > 0) {
+                handleUserMessage();
+            }
+        } catch (nativeErr) {
+            console.error("Native speech recognition error:", nativeErr);
+            logSerial(`[ERR] Speech failed: ${nativeErr.message || nativeErr}`);
+            stopVoiceInput();
+        }
+        return;
+    }
+
+    // Standard Browser Web Speech API
     if (state.speechRecognition) {
         try {
             state.speechRecognition.start();
@@ -191,12 +253,17 @@ function startVoiceInput() {
     }
 }
 
-function stopVoiceInput() {
+async function stopVoiceInput() {
     state.isListening = false;
     document.getElementById('mic-active-overlay').classList.add('hidden');
     document.getElementById('mic-button').classList.remove('recording');
     document.getElementById('hero-mic-label').textContent = "Speak to AI";
-    if (state.speechRecognition) {
+
+    if (isNativeApp() && window.Capacitor?.Plugins?.SpeechRecognition) {
+        try {
+            await window.Capacitor.Plugins.SpeechRecognition.stop();
+        } catch(e) {}
+    } else if (state.speechRecognition) {
         try { state.speechRecognition.stop(); } catch(e){}
     }
 }
@@ -621,7 +688,7 @@ let bleWriteQueue = [];
 let isBleWriting = false;
 
 async function writeBlePayload(payloadString) {
-    if (!state.bleRxCharacteristic) return;
+    if (!state.bleRxCharacteristic && !(isNativeApp() && state.nativeBleDeviceId)) return;
 
     return new Promise((resolve, reject) => {
         bleWriteQueue.push({ payload: payloadString, resolve, reject });
@@ -642,11 +709,25 @@ async function processBleQueue() {
 
             for (let i = 0; i < data.length; i += CHUNK_SIZE) {
                 const chunk = data.slice(i, i + CHUNK_SIZE);
-                if (state.bleRxCharacteristic.writeValueWithoutResponse) {
-                    await state.bleRxCharacteristic.writeValueWithoutResponse(chunk);
-                } else {
-                    await state.bleRxCharacteristic.writeValue(chunk);
+                
+                // Route to Native Capacitor BLE if running inside Android APK
+                if (isNativeApp() && state.nativeBleDeviceId && window.Capacitor?.Plugins?.BluetoothLe) {
+                    const BlePlugin = window.Capacitor.Plugins.BluetoothLe;
+                    const dataView = new DataView(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+                    await BlePlugin.writeWithoutResponse({
+                        deviceId: state.nativeBleDeviceId,
+                        service: NORDIC_UART_SERVICE_UUID,
+                        characteristic: NORDIC_UART_RX_UUID,
+                        value: dataView
+                    });
+                } else if (state.bleRxCharacteristic) {
+                    if (state.bleRxCharacteristic.writeValueWithoutResponse) {
+                        await state.bleRxCharacteristic.writeValueWithoutResponse(chunk);
+                    } else {
+                        await state.bleRxCharacteristic.writeValue(chunk);
+                    }
                 }
+                
                 // Yield briefly between consecutive packets to prevent ESP32 FIFO overflow
                 if (i + CHUNK_SIZE < data.length) {
                     await new Promise(r => setTimeout(r, 20));
@@ -663,6 +744,78 @@ async function processBleQueue() {
 }
 
 async function connectWebBluetooth() {
+    // 1. Check if running inside Android Native App via Capacitor
+    if (isNativeApp() && window.Capacitor?.Plugins?.BluetoothLe) {
+        const BlePlugin = window.Capacitor.Plugins.BluetoothLe;
+        try {
+            logSerial("[BLE] Initializing Native Android Bluetooth LE...");
+            await BlePlugin.initialize({ requestPermissions: true });
+
+            if (state.isHardwareConnected && state.hardwareType === 'bluetooth') {
+                logSerial("[BLE] Disconnecting previous BLE session...");
+                await disconnectHardware();
+                await new Promise(r => setTimeout(r, 300));
+            }
+
+            logSerial("[BLE] Scanning for EchoBraille (Nordic UART Service)...");
+            const device = await BlePlugin.requestDevice({
+                services: [NORDIC_UART_SERVICE_UUID],
+                optionalServices: [NORDIC_UART_SERVICE_UUID]
+            });
+
+            if (!device || !device.deviceId) {
+                logSerial("[BLE] Device selection cancelled or device not found.");
+                return;
+            }
+
+            logSerial(`[BLE] Connecting to: "${device.name || device.deviceId}"...`);
+            await BlePlugin.connect({
+                deviceId: device.deviceId,
+                onDisconnect: () => onBLEDisconnected()
+            });
+
+            state.nativeBleDeviceId = device.deviceId;
+            state.bleDevice = { name: device.name || 'EchoBraille' };
+
+            // Subscribe to incoming ESP32 serial logs over TX
+            try {
+                await BlePlugin.startNotifications({
+                    deviceId: device.deviceId,
+                    service: NORDIC_UART_SERVICE_UUID,
+                    characteristic: NORDIC_UART_TX_UUID
+                }, (result) => {
+                    if (result && result.value) {
+                        let text = "";
+                        if (result.value instanceof DataView) {
+                            text = new TextDecoder().decode(result.value);
+                        } else if (typeof result.value === 'string') {
+                            text = result.value;
+                        }
+                        if (text && text.trim()) logSerial(`[ESP32] ${text.trim()}`);
+                    }
+                });
+                logSerial("[BLE] Subscribed to ESP32 TX notification stream.");
+            } catch (notifyErr) {
+                console.warn("BLE notification subscription skipped:", notifyErr);
+            }
+
+            bleWriteQueue = [];
+            isBleWriting = false;
+            state.isHardwareConnected = true;
+            state.hardwareType = 'bluetooth';
+            updateHardwareStatusUI(true, "EchoBraille BLE Connected (Native)");
+            logSerial("[HW] Successfully connected to EchoBraille via Android Native BLE!");
+            return;
+        } catch (nativeErr) {
+            console.error("Native BLE connection error:", nativeErr);
+            logSerial(`[ERR] Native BLE failed: ${nativeErr.message || nativeErr}`);
+            alert(`Bluetooth Connection Error: ${nativeErr.message || nativeErr}\n\nPlease verify Bluetooth and Location permissions are enabled in Android settings.`);
+            updateHardwareStatusUI(false, "ESP32 Offline");
+            return;
+        }
+    }
+
+    // 2. Standard Web Browser Bluetooth (Chrome, Edge, Opera)
     if (!navigator.bluetooth) {
         const isSecure = window.isSecureContext;
         let errMsg = "Web Bluetooth is not supported in your current browser.";
@@ -772,19 +925,31 @@ function onBLEDisconnected() {
     state.bleServer = null;
     state.bleRxCharacteristic = null;
     state.bleTxCharacteristic = null;
+    state.nativeBleDeviceId = null;
     bleWriteQueue = [];
     isBleWriting = false;
     updateHardwareStatusUI(false, "ESP32 Offline");
 }
 
 async function disconnectHardware() {
-    if (state.hardwareType === 'bluetooth' && state.bleDevice) {
-        try {
-            if (state.bleDevice.gatt && state.bleDevice.gatt.connected) {
-                state.bleDevice.gatt.disconnect();
+    if (state.hardwareType === 'bluetooth') {
+        if (isNativeApp() && state.nativeBleDeviceId && window.Capacitor?.Plugins?.BluetoothLe) {
+            try {
+                await window.Capacitor.Plugins.BluetoothLe.disconnect({
+                    deviceId: state.nativeBleDeviceId
+                });
+            } catch (e) {
+                console.warn("Native BLE disconnect warning:", e);
             }
-        } catch (e) {
-            console.warn("BLE disconnect warning:", e);
+            state.nativeBleDeviceId = null;
+        } else if (state.bleDevice) {
+            try {
+                if (state.bleDevice.gatt && state.bleDevice.gatt.connected) {
+                    state.bleDevice.gatt.disconnect();
+                }
+            } catch (e) {
+                console.warn("BLE disconnect warning:", e);
+            }
         }
     } else if (state.hardwareType === 'webserial' && state.serialPort) {
         try {
@@ -800,6 +965,7 @@ async function disconnectHardware() {
     }
     state.isHardwareConnected = false;
     state.hardwareType = null;
+    state.nativeBleDeviceId = null;
     bleWriteQueue = [];
     isBleWriting = false;
     updateHardwareStatusUI(false, "ESP32 Offline");
@@ -864,7 +1030,7 @@ async function sendHardwareTextCommand(text) {
             console.error("Serial write failed:", err);
             logSerial(`[ERR] Serial write failed: ${err.message}`);
         }
-    } else if (state.hardwareType === 'bluetooth' && state.bleRxCharacteristic) {
+    } else if (state.hardwareType === 'bluetooth' && (state.bleRxCharacteristic || (isNativeApp() && state.nativeBleDeviceId))) {
         try {
             await writeBlePayload(formattedPayload);
             logSerial(`[TX->BLE] Sent: "${text}"`);

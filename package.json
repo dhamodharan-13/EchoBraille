@@ -1,0 +1,16 @@
+{
+  "name": "echobraille",
+  "version": "1.0.0",
+  "description": "EchoBraille - Intelligent AI-Powered Voice-to-Braille Assistive System",
+  "private": true,
+  "scripts": {
+    "cap:sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor-community/bluetooth-le": "^6.1.0",
+    "@capacitor-community/speech-recognition": "^6.0.0"
+  }
+}
