@@ -16,12 +16,15 @@ build/
 
 # Node dependencies
 node_modules/
+app/node_modules/
 package-lock.json
+app/package-lock.json
 
 # Android build cache and outputs
 .gradle/
-android/.gradle/
-android/build/
-android/app/build/
-android/app/build.gradle.cache/
+app/.gradle/
+app/android/.gradle/
+app/android/build/
+app/android/app/build/
+app/android/app/build.gradle.cache/
 *.apk

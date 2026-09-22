@@ -184,12 +184,16 @@ The firmware ([`firmware/echobraille_bluetooth/echobraille_bluetooth.ino`](file:
 
 ---
 
-## 🌐 Web Application & Software Architecture
+## 📱 Application & Software Architecture
 
-The web application in [`web_app/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/web_app) comprises:
-* [`web_app/index.html`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/web_app/index.html) — HTML5 semantic app with 4 tabs.
-* [`web_app/styles.css`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/web_app/styles.css) — Slate dark glassmorphism design system.
-* [`web_app/app.js`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/web_app/app.js) — Client application controller handling Web Speech API, Gemini 1.5 Flash API, WebSerial API, and Web Bluetooth BLE.
+All client application files are cleanly organized in [`app/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app):
+* **Web UI ([`app/web/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/web)):**
+  - [`app/web/index.html`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/web/index.html) — Mobile-first semantic interface with fixed header & bottom dock.
+  - [`app/web/styles.css`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/web/styles.css) — Responsive dark glassmorphic design system.
+  - [`app/web/app.js`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/web/app.js) — Dual-mode controller handling Web APIs & native Android Capacitor plugins.
+* **Android Native App ([`app/android/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/android)):**
+  - Compiled APK: [`app/EchoBraille.apk`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/EchoBraille.apk) *(3.81 MB)*
+  - Target SDK: Android 14 (API Level 34)
 
 ---
 
@@ -214,8 +218,13 @@ The web application in [`web_app/`](file:///c:/Users/HP/OneDrive/Desktop/Echobra
 2. Install `Adafruit PWMServoDriver`, `Adafruit SSD1306`, and `Adafruit GFX`.
 3. Select board and upload.
 
-### 2. Launching Web App
-1. Start local server: `python -m http.server 8000 --directory web_app`.
+### 2. Installing Native Android APK
+```powershell
+& "C:\Users\HP\AppData\Local\Android\Sdk\platform-tools\adb.exe" install -r "app\EchoBraille.apk"
+```
+
+### 3. Launching Web Version
+1. Start local server: `python -m http.server 8000 --directory app/web`.
 2. Open `http://localhost:8000` in Google Chrome or Microsoft Edge.
 3. Click **Pair Web Bluetooth BLE** in the ESP32 Hardware tab to connect wirelessly.
 

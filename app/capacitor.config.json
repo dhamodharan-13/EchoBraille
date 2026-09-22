@@ -1,7 +1,7 @@
 {
   "appId": "org.echobraille.app",
   "appName": "EchoBraille",
-  "webDir": "web_app",
+  "webDir": "web",
   "server": {
     "androidScheme": "https"
   }

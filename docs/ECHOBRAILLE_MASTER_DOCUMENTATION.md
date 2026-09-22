@@ -11,8 +11,8 @@
 1. [Executive Summary & Problem Description](#1-executive-summary--problem-description)
 2. [The EchoBraille Solution](#2-the-echobraille-solution)
 3. [End-to-End System Architecture](#3-end-to-end-system-architecture)
-4. [Mobile-First UI & Software Architecture (`web_app/`)](#4-mobile-first-ui--software-architecture-web_app)
-5. [Native Android Application & Capacitor Bridge (`android/`)](#5-native-android-application--capacitor-bridge-android)
+4. [Mobile-First UI & Software Architecture (`app/web/`)](#4-mobile-first-ui--software-architecture-appweb)
+5. [Native Android Application & Capacitor Bridge (`app/android/`)](#5-native-android-application--capacitor-bridge-appandroid)
 6. [Hardware Engineering & Component Breakdown](#6-hardware-engineering--component-breakdown)
 7. [Pinout, Circuit & Wiring Schematics](#7-pinout-circuit--wiring-schematics)
 8. [Firmware Architecture (`echobraille_bluetooth.ino`)](#8-firmware-architecture-echobraille_bluetoothino)
@@ -113,9 +113,9 @@ graph TB
 
 ---
 
-## 4. Mobile-First UI & Software Architecture (`web_app/`)
+## 4. Mobile-First UI & Software Architecture (`app/web/`)
 
-The software application in [`web_app/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/web_app) has been engineered with a mobile-first, thumb-accessible layout:
+The software application in [`app/web/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/web) has been engineered with a mobile-first, thumb-accessible layout:
 
 * **Fixed App Header:** Top status bar featuring the EchoBraille 6-dot animated logo, dynamic connection status pill (`ESP32 Online / Offline`), high-contrast toggle, and settings sheet launcher.
 * **Fixed Bottom Navigation Dock:** Intuitive bottom tab bar for phone ergonomics with 4 core views:
@@ -126,17 +126,17 @@ The software application in [`web_app/`](file:///c:/Users/HP/OneDrive/Desktop/Ec
 
 ---
 
-## 5. Native Android Application & Capacitor Bridge (`android/`)
+## 5. Native Android Application & Capacitor Bridge (`app/android/`)
 
 EchoBraille is packaged into a native Android application using Capacitor:
 
 * **Package ID:** `org.echobraille.app`
-* **Output APK:** [`EchoBraille.apk`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/EchoBraille.apk) *(3.84 MB)*
+* **Output APK:** [`EchoBraille.apk`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/EchoBraille.apk) *(3.81 MB)*
 * **Target SDK:** API Level 34 (Android 14) / Min SDK 22 (Android 5.1+)
 * **Native Plugin Integration:**
   - `@capacitor-community/bluetooth-le`: Provides native Android BLE scanning, GATT server connection, and 20-byte MTU chunked transmission to the Nordic UART Service (`6e400001-b5a3-f393-e0a9-e50e24dcca9e`).
   - `@capacitor-community/speech-recognition`: Provides native microphone voice recognition with partial result streaming.
-* **Android Manifest Permissions ([`android/app/src/main/AndroidManifest.xml`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/android/app/src/main/AndroidManifest.xml)):**
+* **Android Manifest Permissions ([`app/android/app/src/main/AndroidManifest.xml`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/android/app/src/main/AndroidManifest.xml)):**
   - `BLUETOOTH_SCAN` & `BLUETOOTH_CONNECT` (Android 12+)
   - `BLUETOOTH` & `BLUETOOTH_ADMIN` (Legacy Android)
   - `ACCESS_FINE_LOCATION` & `ACCESS_COARSE_LOCATION`
@@ -251,9 +251,9 @@ Located in [`firmware/echobraille_bluetooth/echobraille_bluetooth.ino`](file:///
 ### 11.2 Installing Native Android Application
 Run ADB command:
 ```powershell
-& "C:\Users\HP\AppData\Local\Android\Sdk\platform-tools\adb.exe" install -r "EchoBraille.apk"
+& "C:\Users\HP\AppData\Local\Android\Sdk\platform-tools\adb.exe" install -r "app/EchoBraille.apk"
 ```
-Or transfer [`EchoBraille.apk`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/EchoBraille.apk) to your Android device and tap to install.
+Or transfer [`EchoBraille.apk`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/EchoBraille.apk) to your Android device and tap to install.
 
 ---
 
