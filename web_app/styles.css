@@ -388,6 +388,18 @@ body {
     background: rgba(0, 242, 254, 0.1);
 }
 
+.btn-danger {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+
+.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.7);
+    color: #ffffff;
+}
+
 .btn-full {
     width: 100%;
 }

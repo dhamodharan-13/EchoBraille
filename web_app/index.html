@@ -289,23 +289,32 @@
                             <div class="status-indicator-big disconnected" id="hw-status-circle"></div>
                             <div class="status-meta">
                                 <h4 id="hw-meta-title">Device Disconnected</h4>
-                                <p id="hw-meta-desc">Click connect below to pair with EchoBraille ESP32-S3 Bluetooth BLE or USB WebSerial COM port.</p>
+                                <p id="hw-meta-desc">Pair wirelessly with EchoBraille BLE or connect via USB / Bluetooth Serial COM port.</p>
                             </div>
                         </div>
 
                         <div class="hw-connect-actions">
-                            <button class="btn btn-primary btn-full" onclick="connectWebBluetooth()">
-                                <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29z"/></svg>
+                            <button class="btn btn-primary btn-full" id="btn-connect-ble" onclick="connectWebBluetooth()">
+                                <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/></svg>
                                 <span>Pair Web Bluetooth BLE</span>
                             </button>
-                            <button class="btn btn-secondary btn-full" onclick="connectWebSerial()">
+                            <button class="btn btn-secondary btn-full" id="btn-connect-serial" onclick="connectWebSerial()">
                                 <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></svg>
-                                <span>Connect USB WebSerial</span>
+                                <span>Connect USB / BT WebSerial</span>
+                            </button>
+                            <button class="btn btn-danger btn-full hidden" id="disconnect-hw-btn" onclick="disconnectHardware()">
+                                <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                                <span>Disconnect Hardware</span>
                             </button>
                             <button class="btn btn-outline btn-full" onclick="toggleSimulatedHardware()">
                                 <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
                                 <span id="sim-hw-btn-text">Enable Virtual ESP32 Hardware</span>
                             </button>
+                        </div>
+                        <div class="hw-tip-box" style="margin-top: 12px; padding: 10px 12px; background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.15); border-radius: 8px; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">
+                            <strong style="color: var(--accent-cyan);">💡 Bluetooth Tips:</strong><br>
+                            • <strong>Web Bluetooth (BLE):</strong> Click "Pair Web Bluetooth BLE" directly in Chrome / Edge without OS pairing (uses Nordic UART Service).<br>
+                            • <strong>Bluetooth Classic (SPP):</strong> Pair "EchoBraille" in Windows / phone settings first, then click "Connect USB / BT WebSerial" and select its assigned COM port.
                         </div>
                     </div>
                 </div>

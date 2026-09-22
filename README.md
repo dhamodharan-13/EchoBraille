@@ -270,8 +270,8 @@ EchoBraille achieves a **99% cost reduction** compared to commercial electronic 
 3. Install required libraries (**Tools → Manage Libraries**):
    - `Adafruit PWMServoDriver`
    - `Adafruit SSD1306` & `Adafruit GFX`
-   - `BluetoothSerial` (comes bundled with ESP32 board package).
-4. Connect your ESP32 via USB, select your board (`ESP32 Dev Module`), select the COM Port, and click **Upload (➔)**.
+   - BLE libraries (`BLEDevice`, `BLEServer`, `BLEUtils`, `BLE2902`) are bundled directly with the ESP32 board package.
+4. Select your board (`ESP32 Dev Module`, `ESP32-S3`, or `XIAO ESP32`), select the COM Port, and click **Upload (➔)**.
 
 ### 2. Launching the Web Application
 1. Start the local server from your project folder:
@@ -283,8 +283,8 @@ EchoBraille achieves a **99% cost reduction** compared to commercial electronic 
    `http://<YOUR_PC_IP_ADDRESS>:8000`
 
 ### 3. Connecting Hardware in the App
-* **Via USB Cable:** Go to the **ESP32 Hardware** tab $\rightarrow$ click **Connect USB WebSerial** $\rightarrow$ select your ESP32 COM port.
-* **Via Bluetooth:** Pair your phone/PC with `"EchoBraille"` in Bluetooth settings $\rightarrow$ open app $\rightarrow$ click **Pair Web Bluetooth BLE**.
+* **Via Web Bluetooth (BLE - Recommended):** Go to the **ESP32 Hardware** tab $\rightarrow$ click **Pair Web Bluetooth BLE** $\rightarrow$ select `"EchoBraille"`. Connects instantly in Google Chrome, Microsoft Edge, and Android Chrome with zero OS pairing needed.
+* **Via USB / Bluetooth Serial (WebSerial):** Click **Connect USB / BT WebSerial** $\rightarrow$ select your ESP32 USB COM port (or paired Bluetooth SPP COM port).
 
 ---
 

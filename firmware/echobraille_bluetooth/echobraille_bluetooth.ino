@@ -1,8 +1,88 @@
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
-#include "BluetoothSerial.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+
+// Forward declaration of command processor
+void processCommand(String input);
+
+// =====================================================
+// BLUETOOTH CONFIGURATION
+//
+// USE_BLE 1 (Default / Recommended):
+//   Enables Bluetooth Low Energy (BLE) with Nordic UART Service.
+//   Connects seamlessly with the EchoBraille Web App via Web Bluetooth
+//   in Chrome, Edge, and Android browsers with zero OS pairing needed.
+//   Compatible with all ESP32 variants: ESP32, ESP32-S3, ESP32-C3, XIAO.
+//
+// USE_BLE 0:
+//   Enables Bluetooth Classic Serial Port Profile (SPP).
+//   Requires standard ESP32 (not S3/C3). Pairs in Windows/Android
+//   settings and connects via WebSerial / Virtual COM port.
+// =====================================================
+#define USE_BLE 1
+
+#if USE_BLE
+  #include <BLEDevice.h>
+  #include <BLEServer.h>
+  #include <BLEUtils.h>
+  #include <BLE2902.h>
+
+  // Nordic UART Service (NUS) UUIDs
+  #define BLE_SERVICE_UUID           "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+  #define BLE_CHARACTERISTIC_UUID_RX "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
+  #define BLE_CHARACTERISTIC_UUID_TX "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
+
+  BLEServer *pBleServer = NULL;
+  BLECharacteristic *pBleTxChar = NULL;
+  bool bleDeviceConnected = false;
+  bool oldBleDeviceConnected = false;
+  String bleIncomingBuffer = "";
+
+  class EchoBrailleServerCallbacks : public BLEServerCallbacks {
+      void onConnect(BLEServer* pServer) {
+          bleDeviceConnected = true;
+          Serial.println("[BLE] Web Bluetooth client connected!");
+      }
+      void onDisconnect(BLEServer* pServer) {
+          bleDeviceConnected = false;
+          Serial.println("[BLE] Web Bluetooth client disconnected.");
+      }
+  };
+
+  class EchoBrailleRxCallbacks : public BLECharacteristicCallbacks {
+      void onWrite(BLECharacteristic *pCharacteristic) {
+          String rxValue = pCharacteristic->getValue();
+          if (rxValue.length() > 0) {
+              for (size_t i = 0; i < rxValue.length(); i++) {
+                  char c = rxValue[i];
+                  if (c == '\n' || c == '\r') {
+                      if (bleIncomingBuffer.length() > 0) {
+                          processCommand(bleIncomingBuffer);
+                          bleIncomingBuffer = "";
+                      }
+                  } else {
+                      bleIncomingBuffer += c;
+                  }
+              }
+          }
+      }
+  };
+
+  void sendBleNotification(const String &msg) {
+      if (bleDeviceConnected && pBleTxChar != NULL) {
+          pBleTxChar->setValue(msg.c_str());
+          pBleTxChar->notify();
+      }
+  }
+#else
+  #if defined(CONFIG_BT_CLASSIC_ENABLED) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+    #include "BluetoothSerial.h"
+    BluetoothSerial SerialBT;
+  #else
+    #error "Classic Bluetooth (BluetoothSerial) is not supported on ESP32-S3 / ESP32-C3. Please set #define USE_BLE 1."
+  #endif
+#endif
 
 // =====================================================
 // ECHOBRAILLE
@@ -13,7 +93,7 @@
 // 0-9
 // Spaces
 // Number Sign
-// Bluetooth
+// Bluetooth (BLE Nordic UART & Classic SPP)
 // USB Serial
 // =====================================================
 
@@ -45,13 +125,6 @@ bool pcaFound = false;
 // =====================================================
 
 Adafruit_PWMServoDriver pca = Adafruit_PWMServoDriver(0x40);
-
-
-// =====================================================
-// BLUETOOTH
-// =====================================================
-
-BluetoothSerial SerialBT;
 
 
 // =====================================================
@@ -1063,6 +1136,10 @@ void processCommand(String input)
 
     Serial.println("[BRAILLE] Finished.");
   }
+
+#if USE_BLE
+  sendBleNotification("[ESP32] OK: " + input + "\n");
+#endif
 }
 
 
@@ -1133,9 +1210,43 @@ void setup()
   clearBraille(true);
   delay(200);
 
+  // Bluetooth Initialization
+#if USE_BLE
+  Serial.println("[BOOT] Initializing BLE Nordic UART: \"EchoBraille\"...");
+  BLEDevice::init("EchoBraille");
+  pBleServer = BLEDevice::createServer();
+  pBleServer->setCallbacks(new EchoBrailleServerCallbacks());
+
+  BLEService *pBleService = pBleServer->createService(BLE_SERVICE_UUID);
+
+  // TX Characteristic (ESP32 notifies web app)
+  pBleTxChar = pBleService->createCharacteristic(
+      BLE_CHARACTERISTIC_UUID_TX,
+      BLECharacteristic::PROPERTY_NOTIFY
+  );
+  pBleTxChar->addDescriptor(new BLE2902());
+
+  // RX Characteristic (Web app writes commands to ESP32)
+  BLECharacteristic *pBleRxChar = pBleService->createCharacteristic(
+      BLE_CHARACTERISTIC_UUID_RX,
+      BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR
+  );
+  pBleRxChar->setCallbacks(new EchoBrailleRxCallbacks());
+
+  pBleService->start();
+
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(BLE_SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(0x06); // Helps iPhone / macOS connection
+  pAdvertising->setMinPreferred(0x12);
+  BLEDevice::startAdvertising();
+  Serial.println("[BOOT] BLE Advertising started: \"EchoBraille\" (Nordic UART Service)");
+#else
   // Bluetooth Classic
-  Serial.println("[BOOT] Starting Bluetooth Classic: \"EchoBraille\"...");
+  Serial.println("[BOOT] Starting Bluetooth Classic SPP: \"EchoBraille\"...");
   SerialBT.begin("EchoBraille");
+#endif
 
   Serial.println();
   Serial.println("=========================================");
@@ -1158,18 +1269,33 @@ void setup()
 
 void loop()
 {
-  // USB Serial
+  // 1. USB Serial
   if (Serial.available())
   {
     String input = Serial.readStringUntil('\n');
     processCommand(input);
   }
 
-  // Bluetooth Serial
+#if USE_BLE
+  // 2. BLE Connection Maintenance & Advertising Restart
+  if (!bleDeviceConnected && oldBleDeviceConnected)
+  {
+    delay(200); // Give the BLE stack time to clear
+    pBleServer->startAdvertising(); // Restart advertising so web app can reconnect
+    Serial.println("[BLE] Advertising restarted. Waiting for connection...");
+    oldBleDeviceConnected = bleDeviceConnected;
+  }
+  if (bleDeviceConnected && !oldBleDeviceConnected)
+  {
+    oldBleDeviceConnected = bleDeviceConnected;
+  }
+#else
+  // 2. Bluetooth Classic Serial
   if (SerialBT.available())
   {
     String input = SerialBT.readStringUntil('\n');
     processCommand(input);
     SerialBT.println("OK");
   }
+#endif
 }
