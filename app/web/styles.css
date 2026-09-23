@@ -1021,11 +1021,31 @@ body {
     color: var(--color-black);
 }
 
-.dict-letter-dots {
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    font-weight: 700;
-    color: var(--text-secondary);
+.dict-dot-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.dict-dot-row {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+.dict-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #D1D5DB;
+    border: 1px solid #9CA3AF;
+    transition: all 0.15s ease;
+}
+
+.dict-dot.on {
+    background: var(--color-black);
+    border-color: var(--color-black);
+    box-shadow: 0 0 3px rgba(17, 17, 17, 0.4);
 }
 
 /* ==========================================================================

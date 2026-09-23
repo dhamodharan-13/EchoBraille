@@ -115,18 +115,27 @@ function dismissSplash() {
 
 // --- Initialize Native Plugins Silently ---
 async function initNativePlugins() {
+    console.log("[INIT] Platform:", window.Capacitor?.getPlatform?.() || 'unknown');
+    console.log("[INIT] isNative:", window.Capacitor?.isNativePlatform?.() || false);
+    console.log("[INIT] BleClient available:", !!window.capacitorCommunityBluetoothLe?.BleClient);
+    console.log("[INIT] Plugins.BluetoothLe available:", !!window.Capacitor?.Plugins?.BluetoothLe);
+
     if (window.capacitorCommunityBluetoothLe?.BleClient) {
         try {
-            await window.capacitorCommunityBluetoothLe.BleClient.initialize();
+            await window.capacitorCommunityBluetoothLe.BleClient.initialize({ androidNeverForLocation: true });
+            console.log("[INIT] BleClient initialized successfully");
         } catch(e) {
-            console.warn("BLE client auto-init:", e);
+            console.warn("[INIT] BLE client auto-init:", e);
         }
     } else if (window.Capacitor?.Plugins?.BluetoothLe) {
         try {
-            await window.Capacitor.Plugins.BluetoothLe.initialize();
+            await window.Capacitor.Plugins.BluetoothLe.initialize({ androidNeverForLocation: true });
+            console.log("[INIT] Capacitor BluetoothLe plugin initialized");
         } catch(e) {
-            console.warn("Capacitor BluetoothLe plugin auto-init:", e);
+            console.warn("[INIT] Capacitor BluetoothLe plugin auto-init:", e);
         }
+    } else {
+        console.log("[INIT] No native BLE plugin found - will try Web Bluetooth as fallback");
     }
 }
 
@@ -541,39 +550,108 @@ function triggerPhoneHaptic(dots) {
 async function connectBluetooth() {
     const bleBtnText = document.getElementById('ble-btn-text');
 
-    // 1. Native Capacitor Community Bluetooth-LE
+    // If already connected, disconnect
+    if (state.isHardwareConnected) {
+        await disconnectBluetooth();
+        return;
+    }
+
+    // 1. Native Capacitor Community Bluetooth-LE (BleClient)
     if (window.capacitorCommunityBluetoothLe?.BleClient) {
         const BleClient = window.capacitorCommunityBluetoothLe.BleClient;
         try {
-            if (bleBtnText) bleBtnText.textContent = "Scanning BLE...";
-            await BleClient.initialize();
+            if (bleBtnText) bleBtnText.textContent = "Initializing BLE...";
+            console.log("[BLE] Using capacitorCommunityBluetoothLe.BleClient");
 
-            const device = await BleClient.requestDevice({
-                services: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'],
-                optionalServices: []
+            await BleClient.initialize({ androidNeverForLocation: true });
+            console.log("[BLE] BleClient initialized");
+
+            // Check if BLE is enabled
+            const isEnabled = await BleClient.isEnabled();
+            if (!isEnabled) {
+                console.log("[BLE] Bluetooth not enabled, requesting enable...");
+                try {
+                    await BleClient.requestEnable();
+                } catch(enableErr) {
+                    console.warn("[BLE] User declined enabling Bluetooth:", enableErr);
+                    updateHardwareStatus(false, "Enable Bluetooth");
+                    return;
+                }
+            }
+
+            if (bleBtnText) bleBtnText.textContent = "Scanning for ESP32...";
+            console.log("[BLE] Requesting device with NUS service filter...");
+
+            // Try requestDevice first (shows native system scan dialog)
+            let device;
+            try {
+                device = await BleClient.requestDevice({
+                    services: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'],
+                    optionalServices: []
+                });
+            } catch (scanErr) {
+                console.error("[BLE] requestDevice failed:", scanErr);
+                // Fallback: try scanning manually
+                if (bleBtnText) bleBtnText.textContent = "Scanning (fallback)...";
+                let foundDeviceId = null;
+                try {
+                    await BleClient.requestLEScan(
+                        { services: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] },
+                        (result) => {
+                            console.log("[BLE] Scan found:", result.device?.name, result.device?.deviceId);
+                            if (!foundDeviceId && result.device?.deviceId) {
+                                foundDeviceId = result.device.deviceId;
+                            }
+                        }
+                    );
+                    // Wait 5 seconds for scan results
+                    await new Promise(r => setTimeout(r, 5000));
+                    await BleClient.stopLEScan();
+                } catch (leScanErr) {
+                    console.error("[BLE] LE Scan also failed:", leScanErr);
+                }
+
+                if (foundDeviceId) {
+                    device = { deviceId: foundDeviceId };
+                } else {
+                    console.error("[BLE] No device found via scan fallback");
+                    updateHardwareStatus(false, "ESP32 Not Found");
+                    return;
+                }
+            }
+
+            console.log("[BLE] Device found:", device.deviceId, device.name || '');
+            if (bleBtnText) bleBtnText.textContent = "Connecting...";
+
+            await BleClient.connect(device.deviceId, (disconnectedDeviceId) => {
+                console.log("[BLE] Device disconnected:", disconnectedDeviceId);
+                state.isHardwareConnected = false;
+                state.nativeBleDeviceId = null;
+                updateHardwareStatus(false, "ESP32 Disconnected");
             });
 
-            if (bleBtnText) bleBtnText.textContent = "Connecting...";
-            await BleClient.connect(device.deviceId);
             state.isHardwareConnected = true;
             state.hardwareType = 'bluetooth';
             state.nativeBleDeviceId = device.deviceId;
 
+            console.log("[BLE] Connected successfully to:", device.deviceId);
             updateHardwareStatus(true, "ESP32 Connected");
             return;
         } catch (err) {
-            console.error("Native BleClient error:", err);
-            updateHardwareStatus(false, "ESP32 Offline");
+            console.error("[BLE] Native BleClient error:", err, JSON.stringify(err));
+            updateHardwareStatus(false, "Connection Failed");
             return;
         }
     }
 
-    // 2. Native Capacitor Plugins.BluetoothLe
+    // 2. Native Capacitor Plugins.BluetoothLe (fallback path)
     if (window.Capacitor?.Plugins?.BluetoothLe) {
         const BlePlugin = window.Capacitor.Plugins.BluetoothLe;
         try {
             if (bleBtnText) bleBtnText.textContent = "Scanning BLE...";
-            await BlePlugin.initialize();
+            console.log("[BLE] Using Capacitor.Plugins.BluetoothLe");
+
+            await BlePlugin.initialize({ androidNeverForLocation: true });
 
             const device = await BlePlugin.requestDevice({
                 services: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
@@ -585,11 +663,12 @@ async function connectBluetooth() {
             state.hardwareType = 'bluetooth';
             state.nativeBleDeviceId = device.deviceId;
 
+            console.log("[BLE] Connected via Capacitor.Plugins.BluetoothLe:", device.deviceId);
             updateHardwareStatus(true, "ESP32 Connected");
             return;
         } catch (err) {
-            console.error("Native BluetoothLe error:", err);
-            updateHardwareStatus(false, "ESP32 Offline");
+            console.error("[BLE] Native BluetoothLe error:", err);
+            updateHardwareStatus(false, "Connection Failed");
             return;
         }
     }
@@ -598,6 +677,8 @@ async function connectBluetooth() {
     if ('bluetooth' in navigator) {
         try {
             if (bleBtnText) bleBtnText.textContent = "Pairing...";
+            console.log("[BLE] Using Web Bluetooth API");
+
             state.bleDevice = await navigator.bluetooth.requestDevice({
                 filters: [{ namePrefix: 'EchoBraille' }, { namePrefix: 'ESP32' }],
                 optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
@@ -609,18 +690,44 @@ async function connectBluetooth() {
 
             state.isHardwareConnected = true;
             state.hardwareType = 'bluetooth';
+            console.log("[BLE] Connected via Web Bluetooth");
             updateHardwareStatus(true, "ESP32 Connected");
         } catch (err) {
-            console.warn("Web Bluetooth error:", err);
+            console.warn("[BLE] Web Bluetooth error:", err);
             updateHardwareStatus(false, "ESP32 Offline");
         }
     } else {
-        // Fallback info rather than raw error
-        if (bleBtnText) bleBtnText.textContent = "Scanning for ESP32...";
+        // Fallback info
+        console.warn("[BLE] No Bluetooth API available on this platform");
+        if (bleBtnText) bleBtnText.textContent = "BLE Unavailable";
         setTimeout(() => {
             updateHardwareStatus(false, "ESP32 Offline");
         }, 1500);
     }
+}
+
+async function disconnectBluetooth() {
+    try {
+        if (window.capacitorCommunityBluetoothLe?.BleClient && state.nativeBleDeviceId) {
+            await window.capacitorCommunityBluetoothLe.BleClient.disconnect(state.nativeBleDeviceId);
+            console.log("[BLE] Disconnected via BleClient");
+        } else if (window.Capacitor?.Plugins?.BluetoothLe && state.nativeBleDeviceId) {
+            await window.Capacitor.Plugins.BluetoothLe.disconnect({ deviceId: state.nativeBleDeviceId });
+            console.log("[BLE] Disconnected via Capacitor.Plugins");
+        } else if (state.bleServer) {
+            state.bleServer.disconnect();
+            console.log("[BLE] Disconnected via Web Bluetooth");
+        }
+    } catch (e) {
+        console.warn("[BLE] Disconnect error (non-critical):", e);
+    }
+    state.isHardwareConnected = false;
+    state.hardwareType = null;
+    state.nativeBleDeviceId = null;
+    state.bleDevice = null;
+    state.bleServer = null;
+    state.bleRxCharacteristic = null;
+    updateHardwareStatus(false, "ESP32 Offline");
 }
 
 function updateHardwareStatus(online, text) {
@@ -645,34 +752,54 @@ function updateHardwareStatus(online, text) {
 
 async function sendHardwareTextCommand(text) {
     const payload = `${text}\n`;
+    const encoder = new TextEncoder();
+    const encoded = encoder.encode(payload);
+    
     if (state.hardwareType === 'bluetooth') {
         if (window.capacitorCommunityBluetoothLe?.BleClient && state.nativeBleDeviceId) {
             try {
-                const encoder = new TextEncoder();
-                const dataView = new DataView(encoder.encode(payload).buffer);
-                await window.capacitorCommunityBluetoothLe.BleClient.write(
-                    state.nativeBleDeviceId,
-                    '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
-                    '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
-                    dataView
-                );
-            } catch(e) {}
+                // Chunk data into 20-byte MTU-safe segments
+                const BleClient = window.capacitorCommunityBluetoothLe.BleClient;
+                const chunkSize = 20;
+                for (let offset = 0; offset < encoded.length; offset += chunkSize) {
+                    const chunk = encoded.slice(offset, offset + chunkSize);
+                    const dataView = new DataView(chunk.buffer);
+                    await BleClient.writeWithoutResponse(
+                        state.nativeBleDeviceId,
+                        '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+                        '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
+                        dataView
+                    );
+                }
+                console.log("[BLE] Sent:", text);
+            } catch(e) {
+                console.error("[BLE] Write error:", e);
+            }
         } else if (window.Capacitor?.Plugins?.BluetoothLe && state.nativeBleDeviceId) {
             try {
-                const encoder = new TextEncoder();
-                const dataView = new DataView(encoder.encode(payload).buffer);
-                await window.Capacitor.Plugins.BluetoothLe.write({
+                const dataView = new DataView(encoded.buffer);
+                await window.Capacitor.Plugins.BluetoothLe.writeWithoutResponse({
                     deviceId: state.nativeBleDeviceId,
                     service: '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
                     characteristic: '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
                     value: dataView
                 });
-            } catch(e) {}
+                console.log("[BLE] Sent via Plugins:", text);
+            } catch(e) {
+                console.error("[BLE] Write error (Plugins):", e);
+            }
         } else if (state.bleRxCharacteristic) {
             try {
-                const encoder = new TextEncoder();
-                await state.bleRxCharacteristic.writeValue(encoder.encode(payload));
-            } catch(e) {}
+                await state.bleRxCharacteristic.writeValueWithoutResponse(encoded);
+                console.log("[BLE] Sent via Web Bluetooth:", text);
+            } catch(e) {
+                // Fallback to writeValue if writeValueWithoutResponse not supported
+                try {
+                    await state.bleRxCharacteristic.writeValue(encoded);
+                } catch(e2) {
+                    console.error("[BLE] Web BT write error:", e2);
+                }
+            }
         }
     }
 }
@@ -731,12 +858,23 @@ function populateBrailleDictionary() {
     container.innerHTML = '';
     for (const [char, dots] of Object.entries(state.brailleMap)) {
         if (char === '#' || char === ' ') continue;
-        const activeDots = dots.map((d, i) => d ? (i + 1) : null).filter(Boolean).join('-');
         const card = document.createElement('div');
         card.className = 'dict-letter-card';
+
+        // Build visual 2x3 braille cell (dots arranged: 1-4, 2-5, 3-6)
+        const dotPairs = [[0, 3], [1, 4], [2, 5]]; // [dot1,dot4], [dot2,dot5], [dot3,dot6]
+        let cellHTML = '<div class="dict-dot-cell">';
+        for (const [left, right] of dotPairs) {
+            cellHTML += `<div class="dict-dot-row">`;
+            cellHTML += `<span class="dict-dot ${dots[left] ? 'on' : ''}"></span>`;
+            cellHTML += `<span class="dict-dot ${dots[right] ? 'on' : ''}"></span>`;
+            cellHTML += `</div>`;
+        }
+        cellHTML += '</div>';
+
         card.innerHTML = `
             <span class="dict-letter-char">${char}</span>
-            <span class="dict-letter-dots">D:${activeDots}</span>
+            ${cellHTML}
         `;
         card.onclick = () => {
             loadBrailleStream(char);
