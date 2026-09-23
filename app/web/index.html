@@ -14,26 +14,21 @@
 <body>
 
     <!-- ==========================================
-         TOP UTILITY BAR (STATUS & CONTROLS ONLY - NO CLUTTER)
+         OPENING ANIMATED INTRO / SPLASH SCREEN
+         Text In-Out Animation: EchoBraille
          ========================================== -->
-    <div class="top-utility-strip">
-        <div class="utility-inner">
-            <div class="utility-brand">
-                <span class="utility-logo">EchoBraille</span>
-                <span class="utility-edition">Assistive System</span>
+    <div class="app-splash-screen" id="app-splash-screen" onclick="dismissSplash()">
+        <div class="splash-inner">
+            <div class="splash-tactile-matrix">
+                <span class="splash-matrix-dot dot-1"></span>
+                <span class="splash-matrix-dot dot-4"></span>
+                <span class="splash-matrix-dot dot-2"></span>
+                <span class="splash-matrix-dot dot-5"></span>
+                <span class="splash-matrix-dot dot-3"></span>
+                <span class="splash-matrix-dot dot-6"></span>
             </div>
-            <div class="utility-actions">
-                <button class="status-pill-btn" id="hw-status-badge" onclick="switchTab('hardware')" title="Hardware Status">
-                    <span class="status-dot-mini" id="status-pulse-dot"></span>
-                    <span id="hw-status-text">ESP32 Offline</span>
-                </button>
-                <button class="util-icon-btn" id="high-contrast-toggle" title="High Contrast Mode" onclick="toggleHighContrast()">
-                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1 0-16v16z"/></svg>
-                </button>
-                <button class="util-icon-btn" id="settings-toggle" title="Settings" onclick="openSettingsModal()">
-                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg>
-                </button>
-            </div>
+            <h1 class="splash-brand-title">Echo<span class="splash-accent">Braille</span></h1>
+            <p class="splash-brand-subtitle">Intelligent Tactile Assistive System</p>
         </div>
     </div>
 
@@ -67,9 +62,17 @@
                 <span class="black-tag-item">Tactile Queue</span>
                 <span class="black-tag-item">Direct Spell</span>
             </div>
-            <div class="black-live-pill">
-                <span class="pulsing-dot"></span>
-                <span id="strip-status-text">Gemini Active</span>
+            <div class="black-strip-right">
+                <div class="black-live-pill">
+                    <span class="pulsing-dot"></span>
+                    <span id="strip-status-text">Gemini Active</span>
+                </div>
+                <button class="strip-util-btn" id="high-contrast-toggle" title="High Contrast Mode" onclick="toggleHighContrast()">
+                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1 0-16v16z"/></svg>
+                </button>
+                <button class="strip-util-btn" id="settings-toggle" title="Settings" onclick="openSettingsModal()">
+                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg>
+                </button>
             </div>
         </div>
     </div>
@@ -235,31 +238,6 @@
                     </button>
                 </div>
 
-                <!-- Section Marker -->
-                <div class="section-marker-row">
-                    <span class="section-marker-title">Live Telemetry Metrics</span>
-                    <span class="section-marker-badge">ESP32-WROOM-32</span>
-                </div>
-
-                <!-- Telemetry Info Tiles -->
-                <div class="telemetry-tiles-grid">
-                    <div class="stat-tile-card">
-                        <span class="stat-tile-label">Battery Voltage</span>
-                        <span class="stat-tile-value" id="metric-voltage">4.18 V</span>
-                    </div>
-                    <div class="stat-tile-card">
-                        <span class="stat-tile-label">Core Temperature</span>
-                        <span class="stat-tile-value" id="metric-temp">37.8 °C</span>
-                    </div>
-                    <div class="stat-tile-card">
-                        <span class="stat-tile-label">BLE Signal RSSI</span>
-                        <span class="stat-tile-value" id="metric-rssi">-54 dBm</span>
-                    </div>
-                    <div class="stat-tile-card">
-                        <span class="stat-tile-label">Actuator Latency</span>
-                        <span class="stat-tile-value" id="metric-latency">7.2 ms</span>
-                    </div>
-                </div>
 
                 <!-- Section Marker -->
                 <div class="section-marker-row">

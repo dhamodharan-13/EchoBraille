@@ -104,120 +104,131 @@ body {
 }
 
 /* ==========================================================================
-   COMPACT TOP UTILITY BAR (NO HUGE HEADER, SLEEK & COMPACT)
+   OPENING INTRO SPLASH SCREEN (TEXT IN-OUT ANIMATION)
    ========================================================================== */
-.top-utility-strip {
-    width: 100%;
-    background: var(--bg-surface);
-    border-bottom: 1.5px solid #E2E8F0;
-    padding: max(0.4rem, env(safe-area-inset-top)) 1rem 0.4rem 1rem;
-}
-
-.utility-inner {
-    width: 100%;
-    max-width: 520px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.utility-brand {
-    display: flex;
-    align-items: baseline;
-    gap: 0.4rem;
-}
-
-.utility-logo {
-    font-family: var(--font-heading);
-    font-size: 1.15rem;
-    font-weight: 900;
-    letter-spacing: -0.4px;
-    color: var(--color-black);
-}
-
-.utility-edition {
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    letter-spacing: 0.3px;
-}
-
-.utility-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-
-.status-pill-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    height: 30px;
-    padding: 0 0.65rem;
-    border-radius: var(--radius-pill);
-    border: var(--border-dark);
-    background: var(--bg-surface);
-    color: var(--text-primary);
-    font-family: var(--font-body);
-    font-size: 0.72rem;
-    font-weight: 800;
-    cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 0.2px;
-    box-shadow: var(--shadow-pop-sm);
-    transition: all 0.15s ease;
-}
-
-.status-pill-btn:active {
-    transform: translateY(2px);
-    box-shadow: none;
-}
-
-.status-dot-mini {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--color-amber);
-    border: 1px solid var(--color-black);
-}
-
-.status-dot-mini.online {
-    background: var(--color-green);
-}
-
-.util-icon-btn {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    border: var(--border-dark);
-    background: var(--bg-surface);
+.app-splash-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: #000000;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: var(--color-black);
-    box-shadow: var(--shadow-pop-sm);
-    transition: all 0.15s ease;
+    animation: splashContainerFadeOut 0.4s ease 2.2s forwards;
+    user-select: none;
 }
 
-.util-icon-btn:active {
-    transform: translateY(2px);
-    box-shadow: none;
+.splash-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+    animation: splashTextInOut 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.util-icon-btn svg {
-    width: 15px;
-    height: 15px;
+.splash-tactile-matrix {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 8px 12px;
+    margin-bottom: 1.5rem;
+}
+
+.splash-matrix-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #262626;
+    transition: all 0.3s ease;
+}
+
+.splash-matrix-dot.dot-1 {
+    background: #FFFFFF;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.85);
+    animation: splashDotPulse 1.2s infinite ease-in-out;
+}
+.splash-matrix-dot.dot-2 {
+    background: #FFFFFF;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.85);
+    animation: splashDotPulse 1.2s infinite ease-in-out 0.2s;
+}
+.splash-matrix-dot.dot-3 {
+    background: #FFFFFF;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.85);
+    animation: splashDotPulse 1.2s infinite ease-in-out 0.4s;
+}
+
+@keyframes splashDotPulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.35); opacity: 1; }
+}
+
+.splash-brand-title {
+    font-family: var(--font-heading);
+    font-size: 2.85rem;
+    font-weight: 900;
+    letter-spacing: -1.2px;
+    color: #FFFFFF;
+    line-height: 1.1;
+    margin-bottom: 0.45rem;
+}
+
+.splash-accent {
+    color: #48C0FF;
+}
+
+.splash-brand-subtitle {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #9CA3AF;
+}
+
+/* Text IN and OUT sequence */
+@keyframes splashTextInOut {
+    0% {
+        opacity: 0;
+        transform: scale(0.86) translateY(20px);
+        filter: blur(8px);
+    }
+    20% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        filter: blur(0px);
+    }
+    75% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        filter: blur(0px);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.08) translateY(-14px);
+        filter: blur(10px);
+    }
+}
+
+@keyframes splashContainerFadeOut {
+    0% {
+        opacity: 1;
+        visibility: visible;
+    }
+    100% {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
 }
 
 /* ==========================================================================
-   TOP SEGMENTED PILL BAR (NO EMOJIS, CLEAN FORMAL STYLE)
+   TOP SEGMENTED PILL BAR (STARTS AT TOP WITH SAFE-AREA INSET)
    ========================================================================== */
 .segmented-nav-wrapper {
     background: var(--bg-surface);
-    padding: 0.5rem 1rem;
+    padding: max(0.6rem, env(safe-area-inset-top)) 1rem 0.5rem 1rem;
     border-bottom: 1.5px solid #E2E8F0;
 }
 
@@ -305,6 +316,12 @@ body {
     color: #FFFFFF;
 }
 
+.black-strip-right {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
 .black-live-pill {
     background: rgba(255, 255, 255, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -328,6 +345,30 @@ body {
     border-radius: 50%;
     background: var(--color-green);
     animation: livePulse 1.5s infinite;
+}
+
+.strip-util-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #FFFFFF;
+    transition: all 0.15s ease;
+}
+
+.strip-util-btn:active {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.strip-util-btn svg {
+    width: 14px;
+    height: 14px;
 }
 
 @keyframes livePulse {
@@ -951,37 +992,6 @@ body {
     color: var(--color-black);
 }
 
-.telemetry-tiles-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.65rem;
-}
-
-.stat-tile-card {
-    background: var(--bg-surface);
-    border: var(--border-dark);
-    border-radius: var(--radius-md);
-    padding: 0.75rem;
-    box-shadow: var(--shadow-pop-sm);
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-}
-
-.stat-tile-label {
-    font-family: var(--font-heading);
-    font-size: 0.68rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: var(--text-muted);
-}
-
-.stat-tile-value {
-    font-family: var(--font-mono);
-    font-size: 1.15rem;
-    font-weight: 900;
-    color: var(--color-black);
-}
 
 .calibration-strip {
     display: flex;

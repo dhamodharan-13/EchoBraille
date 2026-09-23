@@ -84,12 +84,34 @@ const state = {
 
 // --- DOM Ready Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
+    initSplashScreen();
     initSpeechRecognition();
     populateBrailleDictionary();
     updateBuilderPreview();
     updateActuatorUI('A', state.brailleMap['A']);
     initNativePlugins();
 });
+
+// --- Splash Screen Controller ---
+function initSplashScreen() {
+    const splash = document.getElementById('app-splash-screen');
+    if (!splash) return;
+    setTimeout(() => {
+        dismissSplash();
+    }, 2400);
+}
+
+function dismissSplash() {
+    const splash = document.getElementById('app-splash-screen');
+    if (!splash || splash.style.display === 'none') return;
+    splash.style.transition = 'opacity 0.4s ease, visibility 0.4s ease';
+    splash.style.opacity = '0';
+    splash.style.visibility = 'hidden';
+    splash.style.pointerEvents = 'none';
+    setTimeout(() => {
+        splash.style.display = 'none';
+    }, 450);
+}
 
 // --- Initialize Native Plugins Silently ---
 async function initNativePlugins() {
