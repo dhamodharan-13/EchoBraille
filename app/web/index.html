@@ -3,391 +3,317 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>EchoBraille — AI-Powered Voice-to-Braille Assistive Platform</title>
-    <meta name="description" content="Intelligent AI-based Voice-to-Braille assistive platform for deafblind communication and tactile access.">
+    <title>EchoBraille — Voice-to-Braille Tactile System</title>
+    <meta name="description" content="Intelligent AI-based Voice-to-Braille tactile assistive platform for deafblind communication.">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <!-- Fixed App Header Bar -->
+    <!-- ==========================================
+         TOP APP HEADER BAR (STATUS & BRAND)
+         ========================================== -->
     <header class="app-header">
         <div class="header-container">
             <div class="brand-group" onclick="switchTab('assistant')">
-                <div class="brand-glyph">
-                    <span class="mini-dot active"></span>
-                    <span class="mini-dot"></span>
-                    <span class="mini-dot active"></span>
-                    <span class="mini-dot active"></span>
-                    <span class="mini-dot"></span>
-                    <span class="mini-dot active"></span>
+                <div class="brand-glyph-circle" title="EchoBraille 6-Dot Core">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <circle cx="8" cy="6" r="2.5" fill="#48C0FF"/>
+                        <circle cx="8" cy="12" r="2.5" fill="#FF5CA8"/>
+                        <circle cx="8" cy="18" r="2.5" fill="#FF6600"/>
+                        <circle cx="16" cy="6" r="2.5" fill="#05D686"/>
+                        <circle cx="16" cy="12" r="2.5" fill="#FFFFFF"/>
+                        <circle cx="16" cy="18" r="2.5" fill="#48C0FF"/>
+                    </svg>
                 </div>
                 <div class="brand-text-col">
-                    <span class="brand-name">Echo<span class="highlight">Braille</span></span>
-                    <span class="brand-badge">SIH26215 • Assistive MedTech</span>
+                    <span class="brand-title">Echo<span class="pink-dot">Braille</span></span>
+                    <span class="brand-sub">SIH26215 • MedTech</span>
                 </div>
             </div>
 
             <div class="header-actions">
-                <button class="hw-pill-badge" id="hw-status-badge" onclick="switchTab('hardware')" title="Connection Status">
-                    <span class="status-indicator-dot offline" id="status-pulse-dot"></span>
+                <button class="header-pill-btn" id="hw-status-badge" onclick="switchTab('hardware')" title="Hardware Status">
+                    <span class="status-dot-mini" id="status-pulse-dot"></span>
                     <span id="hw-status-text">ESP32 Offline</span>
                 </button>
-                <button class="header-icon-btn" id="high-contrast-toggle" title="High Contrast Mode" onclick="toggleHighContrast()">
+                <button class="header-icon-circle" id="high-contrast-toggle" title="Toggle High Contrast Mode" onclick="toggleHighContrast()">
                     <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1 0-16v16z"/></svg>
                 </button>
-                <button class="header-icon-btn" id="settings-toggle" title="Settings & Preferences" onclick="openSettingsModal()">
+                <button class="header-icon-circle" id="settings-toggle" title="Settings" onclick="openSettingsModal()">
                     <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- App Main Views Container -->
+    <!-- ==========================================
+         TOP SEGMENTED PILL BAR (EXACT REFERENCE 1: Lineup / Timeline / List)
+         ========================================== -->
+    <div class="segmented-nav-wrapper">
+        <div class="segmented-pill-container">
+            <button class="segmented-pill-btn active" id="seg-btn-assistant" onclick="switchTab('assistant')">
+                <span>💬 Assistant</span>
+            </button>
+            <button class="segmented-pill-btn" id="seg-btn-actuator" onclick="switchTab('actuator')">
+                <span>⚡ Actuator</span>
+            </button>
+            <button class="segmented-pill-btn" id="seg-btn-hardware" onclick="switchTab('hardware')">
+                <span>📡 Hardware</span>
+            </button>
+            <button class="segmented-pill-btn" id="seg-btn-studio" onclick="switchTab('studio')">
+                <span>🔤 Studio</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         SIGNATURE HOT PINK BANNER STRIP (EXACT REFERENCE 1: Thursday / Friday)
+         ========================================== -->
+    <div class="pink-category-strip">
+        <div class="pink-strip-inner">
+            <div class="pink-strip-tags" id="pink-category-tags">
+                <span class="pink-tag-item active" id="pink-tag-1">Speech & AI</span>
+                <span class="pink-tag-item" id="pink-tag-2">Tactile Queue</span>
+                <span class="pink-tag-item" id="pink-tag-3">Direct Spell</span>
+            </div>
+            <div class="pink-live-pill">
+                <span class="pulsing-dot"></span>
+                <span id="pink-live-status-text">Gemini Active</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MAIN APPLICATION CONTAINER
+         ========================================== -->
     <main class="app-container">
 
         <!-- ==========================================
-             VIEW 1: AI VOICE & CHAT STREAM
+             VIEW 1: ASSISTANT (CHAT, CHIPS & COMPOSER)
              ========================================== -->
         <section class="view-panel active tab-pane" id="pane-assistant">
-            <div class="assistant-container">
+            <div class="assistant-layout">
                 
-                <!-- Live AI Guardrail Status Banner -->
-                <div class="status-pill-banner">
-                    <div class="banner-left">
-                        <span class="pulse-circle"></span>
-                        <span>Gemini 1.5 Flash AI Active</span>
-                    </div>
-                    <div class="banner-right">
-                        <span>Max 15 words • Low Latency</span>
-                    </div>
+                <!-- Section Marker (Like 18:00 in reference) -->
+                <div class="section-marker-row">
+                    <span class="section-marker-title">Assistive AI Stream</span>
+                    <span class="section-marker-badge">Max 15 Words • Low Latency</span>
                 </div>
 
-                <!-- Fast Suggestion Pills -->
-                <div class="quick-chips-scroll">
-                    <button class="quick-chip" onclick="sendQuickPrompt('Explain what Braille is in 2 simple sentences.')">💡 What is Braille?</button>
-                    <button class="quick-chip" onclick="sendQuickPrompt('What is the capital of India?')">🇮🇳 Capital of India</button>
-                    <button class="quick-chip" onclick="sendQuickPrompt('Spell HELLO in Braille.')">🔤 Spell HELLO</button>
-                    <button class="quick-chip" onclick="sendQuickPrompt('Help! Emergency assistance needed.')">🚨 Emergency SOS</button>
-                    <button class="quick-chip" onclick="sendQuickPrompt('What time is it?')">⏰ Current Time</button>
+                <!-- Quick Suggestion Chips (Horizontal Scroll) -->
+                <div class="chips-scroll-strip">
+                    <button class="neo-chip-btn" onclick="sendQuickPrompt('Explain what Braille is in 2 simple sentences.')">💡 What is Braille?</button>
+                    <button class="neo-chip-btn" onclick="sendQuickPrompt('What is the capital of India?')">🇮🇳 Capital of India</button>
+                    <button class="neo-chip-btn" onclick="sendQuickPrompt('Spell HELLO in Braille.')">🔤 Spell HELLO</button>
+                    <button class="neo-chip-btn" onclick="sendQuickPrompt('Help! Emergency assistance needed.')">🚨 Emergency SOS</button>
+                    <button class="neo-chip-btn" onclick="sendQuickPrompt('What time is it?')">⏰ Current Time</button>
                 </div>
 
                 <!-- Chat Feed Card -->
-                <div class="chat-window-card">
-                    <div class="chat-thread" id="chat-messages-container">
-                        <!-- AI Greeting Message -->
-                        <div class="chat-message-row ai">
-                            <div class="chat-avatar ai">AI</div>
-                            <div class="bubble-body">
-                                <p>Welcome to <strong>EchoBraille</strong>. Speak or type any query — responses are automatically translated into physical 6-dot Braille tactile pulses.</p>
-                                <div class="bubble-tactile-preview">
-                                    <span class="preview-braille-text">READY: "Louis Braille 1824"</span>
-                                    <button class="preview-actuate-btn" onclick="sendQuickPrompt('Spell ECHO')">Play Demo</button>
+                <div class="chat-thread-card">
+                    <div class="chat-thread-inner" id="chat-messages-container">
+                        <!-- AI Greeting Message Card (Sky Blue Accent like Reference 1 Lineup Highlight!) -->
+                        <div class="msg-card-row ai">
+                            <div class="msg-card-bubble ai">
+                                <div class="msg-card-header">
+                                    <span class="msg-author-pill">EchoBraille AI</span>
+                                    <span class="msg-card-time">LIVE</span>
+                                </div>
+                                <div class="msg-body-text">
+                                    Welcome! Speak or type your query. Every sentence is converted into physical 6-dot Braille tactile pulses on the ESP32.
+                                </div>
+                                <div class="msg-braille-box">
+                                    <span class="braille-stream-text">READY: "HELLO" (⠓⠑⠇⠇⠕)</span>
+                                    <button class="braille-play-btn" onclick="sendQuickPrompt('Spell ECHO')">Play Demo</button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Voice Waveform Overlay (Shown when Microphone is listening) -->
-                    <div class="voice-listening-overlay hidden" id="mic-active-overlay">
-                        <div class="wave-bars-group">
-                            <div class="wave-bar b1"></div>
-                            <div class="wave-bar b2"></div>
-                            <div class="wave-bar b3"></div>
-                            <div class="wave-bar b4"></div>
-                            <div class="wave-bar b5"></div>
-                        </div>
-                        <span class="listening-transcript" id="mic-listening-text">Listening... speak now</span>
-                        <button class="cancel-voice-btn" onclick="stopVoiceInput()">✕</button>
-                    </div>
-
-                    <!-- Chat Composer (Fixed Bottom of Card) -->
-                    <div class="chat-composer">
-                        <button class="composer-mic-btn" id="mic-button" title="Speak to EchoBraille" onclick="toggleVoiceInput()">
+                    <!-- Neo-Pop Chat Composer Bar -->
+                    <div class="chat-composer-strip">
+                        <button class="composer-mic-action" id="mic-button" title="Speak to EchoBraille" onclick="toggleVoiceInput()">
                             <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
                         </button>
-                        <input type="text" class="composer-input" id="chat-input-field" placeholder="Ask AI or type a word to spell..." autocomplete="off">
-                        <button class="composer-send-btn" id="send-btn" onclick="handleUserMessage()">
+                        <input type="text" class="composer-input-field" id="chat-input-field" placeholder="Ask AI or type text to spell..." autocomplete="off">
+                        <button class="composer-send-action" id="send-btn" onclick="handleUserMessage()">
                             <svg viewBox="0 0 24 24"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                         </button>
                     </div>
                 </div>
 
-                <!-- Hidden span for hero mic label compatibility -->
+                <!-- Hidden span for hero mic compatibility -->
                 <span id="hero-mic-label" class="hidden">Speak to AI</span>
 
             </div>
         </section>
 
         <!-- ==========================================
-             VIEW 2: 6-DOT TACTILE ACTUATOR & OLED
+             VIEW 2: ACTUATOR (6-DOT CELL & OLED)
              ========================================== -->
         <section class="view-panel tab-pane" id="pane-actuator">
-            <div class="actuator-container">
+            <div class="actuator-card">
 
-                <div class="view-header">
-                    <h2 class="view-title">
-                        <span>Tactile Actuator Cell</span>
-                    </h2>
-                    <p class="view-subtitle">Physical 6-servo Braille dot elevation & on-device OLED preview</p>
+                <div class="actuator-meta-bar">
+                    <div class="big-char-badge">
+                        <span class="big-char-title" id="current-char-badge">Char: —</span>
+                        <span class="big-char-count" id="stream-index-label">(0/0)</span>
+                    </div>
+                    <span class="status-pill-subtle" id="oled-mode-text">STANDBY</span>
                 </div>
 
-                <!-- Actuator Stage Card -->
-                <div class="actuator-hero-card">
-                    <div class="actuator-meta-bar">
-                        <span class="char-indicator-badge" id="current-char-badge">Char: —</span>
-                        <span class="stream-status-tag" id="oled-mode-text">STANDBY</span>
-                    </div>
-
-                    <!-- 3D Tactile 6-Dot Cell (Standard 2x3 Matrix) -->
-                    <div class="tactile-cell-outer">
-                        <div class="cell-dot-grid" id="tactile-braille-cell">
-                            <!-- Left Column: Dots 1, 2, 3 -->
-                            <div class="tactile-pin-unit" id="pin-box-1" data-dot="1" onclick="toggleTestDot(1)">
-                                <div class="pin-disc">1</div>
-                                <div class="pin-servo-stem"></div>
-                                <span class="pin-angle-pill" id="servo-angle-1">0°</span>
-                            </div>
-                            <!-- Right Column: Dot 4 -->
-                            <div class="tactile-pin-unit" id="pin-box-4" data-dot="4" onclick="toggleTestDot(4)">
-                                <div class="pin-disc">4</div>
-                                <div class="pin-servo-stem"></div>
-                                <span class="pin-angle-pill" id="servo-angle-4">0°</span>
-                            </div>
-
-                            <!-- Left Column: Dot 2 -->
-                            <div class="tactile-pin-unit" id="pin-box-2" data-dot="2" onclick="toggleTestDot(2)">
-                                <div class="pin-disc">2</div>
-                                <div class="pin-servo-stem"></div>
-                                <span class="pin-angle-pill" id="servo-angle-2">0°</span>
-                            </div>
-                            <!-- Right Column: Dot 5 -->
-                            <div class="tactile-pin-unit" id="pin-box-5" data-dot="5" onclick="toggleTestDot(5)">
-                                <div class="pin-disc">5</div>
-                                <div class="pin-servo-stem"></div>
-                                <span class="pin-angle-pill" id="servo-angle-5">0°</span>
-                            </div>
-
-                            <!-- Left Column: Dot 3 -->
-                            <div class="tactile-pin-unit" id="pin-box-3" data-dot="3" onclick="toggleTestDot(3)">
-                                <div class="pin-disc">3</div>
-                                <div class="pin-servo-stem"></div>
-                                <span class="pin-angle-pill" id="servo-angle-3">0°</span>
-                            </div>
-                            <!-- Right Column: Dot 6 -->
-                            <div class="tactile-pin-unit" id="pin-box-6" data-dot="6" onclick="toggleTestDot(6)">
-                                <div class="pin-disc">6</div>
-                                <div class="pin-servo-stem"></div>
-                                <span class="pin-angle-pill" id="servo-angle-6">0°</span>
-                            </div>
+                <!-- 6-Dot Physical Tactile Matrix -->
+                <div class="tactile-matrix-container">
+                    <div class="tactile-dots-grid" id="tactile-braille-cell">
+                        <!-- Left Column: Dots 1, 2, 3 -->
+                        <div class="neo-pin-unit" id="pin-box-1" data-dot="1" onclick="toggleTestDot(1)">
+                            <div class="neo-pin-circle">1</div>
+                            <span class="neo-pin-angle" id="angle-val-1">0°</span>
                         </div>
-                    </div>
+                        <!-- Right Column: Dots 4, 5, 6 -->
+                        <div class="neo-pin-unit" id="pin-box-4" data-dot="4" onclick="toggleTestDot(4)">
+                            <div class="neo-pin-circle">4</div>
+                            <span class="neo-pin-angle" id="angle-val-4">180°</span>
+                        </div>
 
-                    <!-- Realistic SH1106 OLED Display Simulator -->
-                    <div class="oled-container-card">
-                        <div class="oled-top-row">
-                            <span>SH1106 OLED 128x64</span>
-                            <span style="color: #10b981;">● I2C 0x3C</span>
+                        <div class="neo-pin-unit" id="pin-box-2" data-dot="2" onclick="toggleTestDot(2)">
+                            <div class="neo-pin-circle">2</div>
+                            <span class="neo-pin-angle" id="angle-val-2">0°</span>
                         </div>
-                        <div class="oled-main-display">
-                            <div class="oled-letter-huge" id="oled-char-display">?</div>
-                            <div class="oled-glyph-col">
-                                <div class="oled-glyph-large" id="oled-braille-symbol">⠠</div>
-                                <div class="oled-bitmask-text" id="oled-binary-pattern">Dots: [ 0, 0, 0, 0, 0, 0 ]</div>
-                            </div>
+                        <div class="neo-pin-unit" id="pin-box-5" data-dot="5" onclick="toggleTestDot(5)">
+                            <div class="neo-pin-circle">5</div>
+                            <span class="neo-pin-angle" id="angle-val-5">180°</span>
                         </div>
-                        <div class="oled-bottom-ticker" id="oled-stream-preview">EchoBraille ESP32 Ready</div>
+
+                        <div class="neo-pin-unit" id="pin-box-3" data-dot="3" onclick="toggleTestDot(3)">
+                            <div class="neo-pin-circle">3</div>
+                            <span class="neo-pin-angle" id="angle-val-3">0°</span>
+                        </div>
+                        <div class="neo-pin-unit" id="pin-box-6" data-dot="6" onclick="toggleTestDot(6)">
+                            <div class="neo-pin-circle">6</div>
+                            <span class="neo-pin-angle" id="angle-val-6">180°</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Playback Control Deck -->
-                <div class="playback-deck-card">
-                    <div class="stream-ticker-row">
-                        <span class="ticker-label">Stream:</span>
-                        <span class="ticker-text" id="stream-text-display">Waiting for AI query or text stream...</span>
+                <!-- Miniature OLED Simulation Card -->
+                <div class="oled-device-card">
+                    <div class="oled-header-line">
+                        <span>SH1106 OLED 128x64</span>
+                        <span id="oled-i2c-addr">I2C: 0x3C</span>
+                    </div>
+                    <div class="oled-screen-body">
+                        <div class="oled-char-display" id="oled-letter-char">A</div>
+                        <div class="oled-dots-matrix-mini">
+                            <span class="oled-mini-dot on" id="oled-d1"></span>
+                            <span class="oled-mini-dot" id="oled-d4"></span>
+                            <span class="oled-mini-dot" id="oled-d2"></span>
+                            <span class="oled-mini-dot" id="oled-d5"></span>
+                            <span class="oled-mini-dot" id="oled-d3"></span>
+                            <span class="oled-mini-dot" id="oled-d6"></span>
+                        </div>
+                    </div>
+                    <div class="oled-footer-stream" id="stream-text-display">Streaming: ECHOBRAILLE</div>
+                </div>
+
+                <!-- Playback & Refresh Rate Controls -->
+                <div class="actuator-controls-row">
+                    <div class="speed-pills-group">
+                        <button class="speed-pill-btn" onclick="setSpeedPreset(0.3, this)">0.3s Fast</button>
+                        <button class="speed-pill-btn active" onclick="setSpeedPreset(0.8, this)">0.8s Normal</button>
+                        <button class="speed-pill-btn" onclick="setSpeedPreset(1.5, this)">1.5s Learn</button>
                     </div>
 
-                    <div class="progress-track">
-                        <div class="progress-bar-fill" id="braille-progress-fill" style="width: 0%;"></div>
-                    </div>
-
-                    <div class="controls-button-bar">
-                        <button class="transport-btn" id="step-prev-btn" onclick="stepBraille(-1)" disabled title="Previous Character">
-                            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-                        </button>
-
-                        <button class="transport-btn primary-play" id="play-pause-btn" onclick="togglePlayback()" disabled title="Play / Pause">
-                            <svg id="play-icon" viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
-                            <svg id="pause-icon" class="hidden" viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                        </button>
-
-                        <button class="transport-btn" id="step-next-btn" onclick="stepBraille(1)" disabled title="Next Character">
-                            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-                        </button>
-
-                        <button class="transport-btn" id="repeat-btn" onclick="restartBrailleStream()" disabled title="Repeat Stream">
-                            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
-                        </button>
-                    </div>
-
-                    <div class="speed-adjust-row">
-                        <span>Speed</span>
-                        <input type="range" class="speed-slider" id="refresh-speed-slider" min="300" max="2500" step="100" value="1000" oninput="updateRefreshSpeed(this.value)">
-                        <span class="speed-pill" id="speed-value-text">1.0s / char</span>
-                    </div>
+                    <button class="primary-action-pill" id="play-pause-btn" onclick="toggleStreamPlayback()">
+                        <span>▶ Start Stream</span>
+                    </button>
                 </div>
 
             </div>
         </section>
 
         <!-- ==========================================
-             VIEW 3: ESP32 HARDWARE & BLE TELEMETRY
+             VIEW 3: HARDWARE (ESP32 BLE & TELEMETRY)
              ========================================== -->
         <section class="view-panel tab-pane" id="pane-hardware">
-            <div class="hardware-container">
+            <div class="hardware-card">
 
-                <div class="view-header">
-                    <h2 class="view-title">
-                        <span>ESP32 Hardware</span>
-                    </h2>
-                    <p class="view-subtitle">Bluetooth BLE wireless link & PCA9685 servo calibration</p>
+                <div class="hardware-hero-banner">
+                    <h3 class="hw-hero-title">ESP32 Nordic UART BLE</h3>
+                    <p class="hw-hero-desc">Connect wirelessly via Bluetooth Low Energy GATT (`6e400001-...`) or USB Serial to actuate tactile pins.</p>
+                    <button class="big-connect-pill" id="ble-connect-btn" onclick="connectBluetooth()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14.88 16.29L13 18.17V14.41l1.88 1.88M13 5.83l1.88 1.88L13 9.59V5.83M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4zm-2.83 8.58L13 18.17v-3.76l1.88 1.88z"/></svg>
+                        <span id="ble-btn-text">Scan & Connect ESP32</span>
+                    </button>
                 </div>
 
-                <!-- Hardware Connection Card -->
-                <div class="hw-card-panel">
-                    <div class="hw-hero-status" id="hw-detailed-status">
-                        <div class="status-ring-large disconnected" id="hw-status-circle">
-                            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/></svg>
-                        </div>
-                        <div class="hw-hero-info">
-                            <h4 id="hw-meta-title">Device Disconnected</h4>
-                            <p id="hw-meta-desc">Connect wirelessly via Web Bluetooth BLE or USB COM port.</p>
-                        </div>
+                <!-- Section Marker -->
+                <div class="section-marker-row">
+                    <span class="section-marker-title">Live Telemetry Metrics</span>
+                    <span class="section-marker-badge">ESP32-WROOM-32</span>
+                </div>
+
+                <!-- Neo-Pop Telemetry Tiles -->
+                <div class="telemetry-tiles-grid">
+                    <div class="stat-tile-card">
+                        <span class="stat-tile-label">Battery / Power</span>
+                        <span class="stat-tile-value" id="metric-voltage">4.18 V</span>
                     </div>
-
-                    <div class="hw-action-stack">
-                        <button class="btn-touch btn-touch-primary" id="btn-connect-ble" onclick="connectWebBluetooth()">
-                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/></svg>
-                            <span>Pair Web Bluetooth BLE</span>
-                        </button>
-
-                        <button class="btn-touch btn-touch-secondary" id="btn-connect-serial" onclick="connectWebSerial()">
-                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></svg>
-                            <span>Connect USB / BT WebSerial</span>
-                        </button>
-
-                        <button class="btn-touch btn-touch-danger hidden" id="disconnect-hw-btn" onclick="disconnectHardware()">
-                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-                            <span>Disconnect Hardware</span>
-                        </button>
-
-                        <button class="btn-touch btn-touch-outline" onclick="toggleSimulatedHardware()">
-                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                            <span id="sim-hw-btn-text">Enable Virtual ESP32 Hardware</span>
-                        </button>
+                    <div class="stat-tile-card">
+                        <span class="stat-tile-label">ESP32 Core Temp</span>
+                        <span class="stat-tile-value" id="metric-temp">37.8 °C</span>
+                    </div>
+                    <div class="stat-tile-card">
+                        <span class="stat-tile-label">BLE Signal RSSI</span>
+                        <span class="stat-tile-value" id="metric-rssi">-54 dBm</span>
+                    </div>
+                    <div class="stat-tile-card">
+                        <span class="stat-tile-label">Actuator Latency</span>
+                        <span class="stat-tile-value" id="metric-latency">7.2 ms</span>
                     </div>
                 </div>
 
-                <!-- Servo Motors PCA9685 Calibration -->
-                <div class="hw-card-panel">
-                    <h3 style="font-family: var(--font-heading); font-size: 1.05rem;">PCA9685 Servo Calibration</h3>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">Adjust individual servo angles for the 6 physical pins (0° Retracted, 55° Raised).</p>
-
-                    <div class="servo-grid-list">
-                        <div class="servo-slider-tile">
-                            <div class="tile-label-row">
-                                <span>Dot 1 (Top-Left)</span>
-                                <span class="tile-angle-pill" id="cal-val-1">90°</span>
-                            </div>
-                            <input type="range" min="0" max="180" value="90" class="servo-range-input" oninput="testSingleServo(1, this.value)">
-                        </div>
-                        <div class="servo-slider-tile">
-                            <div class="tile-label-row">
-                                <span>Dot 2 (Mid-Left)</span>
-                                <span class="tile-angle-pill" id="cal-val-2">90°</span>
-                            </div>
-                            <input type="range" min="0" max="180" value="90" class="servo-range-input" oninput="testSingleServo(2, this.value)">
-                        </div>
-                        <div class="servo-slider-tile">
-                            <div class="tile-label-row">
-                                <span>Dot 3 (Bot-Left)</span>
-                                <span class="tile-angle-pill" id="cal-val-3">90°</span>
-                            </div>
-                            <input type="range" min="0" max="180" value="90" class="servo-range-input" oninput="testSingleServo(3, this.value)">
-                        </div>
-                        <div class="servo-slider-tile">
-                            <div class="tile-label-row">
-                                <span>Dot 4 (Top-Right)</span>
-                                <span class="tile-angle-pill" id="cal-val-4">90°</span>
-                            </div>
-                            <input type="range" min="0" max="180" value="90" class="servo-range-input" oninput="testSingleServo(4, this.value)">
-                        </div>
-                        <div class="servo-slider-tile">
-                            <div class="tile-label-row">
-                                <span>Dot 5 (Mid-Right)</span>
-                                <span class="tile-angle-pill" id="cal-val-5">90°</span>
-                            </div>
-                            <input type="range" min="0" max="180" value="90" class="servo-range-input" oninput="testSingleServo(5, this.value)">
-                        </div>
-                        <div class="servo-slider-tile">
-                            <div class="tile-label-row">
-                                <span>Dot 6 (Bot-Right)</span>
-                                <span class="tile-angle-pill" id="cal-val-6">90°</span>
-                            </div>
-                            <input type="range" min="0" max="180" value="90" class="servo-range-input" oninput="testSingleServo(6, this.value)">
-                        </div>
-                    </div>
-
-                    <div class="servo-quick-btn-row">
-                        <button class="servo-quick-btn" onclick="resetAllServos(0)">Retract All (0°)</button>
-                        <button class="servo-quick-btn" onclick="resetAllServos(90)">Elevate All (90°)</button>
-                        <button class="servo-quick-btn" onclick="runHardwareSelfTest()">Run Self-Test</button>
-                    </div>
+                <!-- Section Marker -->
+                <div class="section-marker-row">
+                    <span class="section-marker-title">PCA9685 Servo Trim</span>
+                    <span class="section-marker-badge">PWM 50Hz (0x40)</span>
                 </div>
 
-                <!-- Hardware Telemetry Dashboard -->
-                <div class="hw-card-panel">
-                    <h3 style="font-family: var(--font-heading); font-size: 1.05rem;">Telemetry & Diagnostics</h3>
-                    <div class="stats-dashboard">
-                        <div class="stat-tile">
-                            <span class="stat-title">ESP32 Temp</span>
-                            <span class="stat-number" id="telem-temp">38.4 °C</span>
-                        </div>
-                        <div class="stat-tile">
-                            <span class="stat-title">Supply Volts</span>
-                            <span class="stat-number" id="telem-volts">3.72 V</span>
-                        </div>
-                        <div class="stat-tile">
-                            <span class="stat-title">BLE RSSI</span>
-                            <span class="stat-number" id="telem-rssi">-64 dBm</span>
-                        </div>
-                        <div class="stat-tile">
-                            <span class="stat-title">Roundtrip</span>
-                            <span class="stat-number" id="telem-latency">18 ms</span>
-                        </div>
-                        <div class="stat-tile">
-                            <span class="stat-title">I2C Rate</span>
-                            <span class="stat-number">400 kHz</span>
-                        </div>
-                        <div class="stat-tile">
-                            <span class="stat-title">Target BOM</span>
-                            <span class="stat-number green">≈ ₹1,500</span>
-                        </div>
+                <!-- PCA9685 Servo Calibration Sliders -->
+                <div class="calibration-strip">
+                    <div class="slider-row">
+                        <span>Dot 1 (CH 2):</span>
+                        <input type="range" min="0" max="180" value="55" id="slider-dot-1" oninput="calibrateServo(1, this.value)">
+                        <span id="cal-val-1">55°</span>
                     </div>
-
-                    <!-- Serial Terminal Output -->
-                    <div class="terminal-dock">
-                        <div class="terminal-top">
-                            <span>Serial Monitor (115200 Baud)</span>
-                            <button class="btn-text-sm" onclick="clearSerialLog()" style="background: none; border: none; color: var(--accent-cyan); cursor: pointer; font-size: 0.72rem;">Clear</button>
-                        </div>
-                        <div class="terminal-scroll" id="serial-terminal-output">
-                            <div class="log-line">[SYS] EchoBraille Hardware Interface Ready</div>
-                            <div class="log-line">[BLE] Nordic UART Service Initialized (6e400001)</div>
-                        </div>
+                    <div class="slider-row">
+                        <span>Dot 2 (CH 1):</span>
+                        <input type="range" min="0" max="180" value="55" id="slider-dot-2" oninput="calibrateServo(2, this.value)">
+                        <span id="cal-val-2">55°</span>
+                    </div>
+                    <div class="slider-row">
+                        <span>Dot 3 (CH 0):</span>
+                        <input type="range" min="0" max="180" value="55" id="slider-dot-3" oninput="calibrateServo(3, this.value)">
+                        <span id="cal-val-3">55°</span>
+                    </div>
+                    <div class="slider-row">
+                        <span>Dot 4 (CH 3):</span>
+                        <input type="range" min="0" max="180" value="125" id="slider-dot-4" oninput="calibrateServo(4, this.value)">
+                        <span id="cal-val-4">125°</span>
+                    </div>
+                    <div class="slider-row">
+                        <span>Dot 5 (CH 4):</span>
+                        <input type="range" min="0" max="180" value="125" id="slider-dot-5" oninput="calibrateServo(5, this.value)">
+                        <span id="cal-val-5">125°</span>
+                    </div>
+                    <div class="slider-row">
+                        <span>Dot 6 (CH 5):</span>
+                        <input type="range" min="0" max="180" value="125" id="slider-dot-6" oninput="calibrateServo(6, this.value)">
+                        <span id="cal-val-6">125°</span>
                     </div>
                 </div>
 
@@ -395,137 +321,104 @@
         </section>
 
         <!-- ==========================================
-             VIEW 4: BRAILLE STUDIO & DICTIONARY
+             VIEW 4: STUDIO (BUILDER & DICTIONARY)
              ========================================== -->
         <section class="view-panel tab-pane" id="pane-studio">
-            <div class="studio-container">
+            <div class="studio-card">
 
-                <div class="view-header">
-                    <h2 class="view-title">
-                        <span>Braille Studio</span>
-                    </h2>
-                    <p class="view-subtitle">Interactive cell builder & Grade-1 UEB reference dictionary</p>
+                <div class="section-marker-row">
+                    <span class="section-marker-title">Interactive Cell Builder</span>
+                    <span class="section-marker-badge">Grade-1 UEB</span>
                 </div>
 
-                <!-- Dot-to-Letter Interactive Tester -->
-                <div class="studio-card-panel">
-                    <h3 style="font-family: var(--font-heading); font-size: 1.05rem;">Interactive Cell Builder</h3>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">Tap any dot below to toggle elevation and discover which letter is formed.</p>
+                <div class="builder-stage-box">
+                    <div class="builder-dots-column">
+                        <button class="builder-dot-btn" id="bdot-1" onclick="toggleBuilderDot(1)">1</button>
+                        <button class="builder-dot-btn" id="bdot-4" onclick="toggleBuilderDot(4)">4</button>
+                        <button class="builder-dot-btn" id="bdot-2" onclick="toggleBuilderDot(2)">2</button>
+                        <button class="builder-dot-btn" id="bdot-5" onclick="toggleBuilderDot(5)">5</button>
+                        <button class="builder-dot-btn" id="bdot-3" onclick="toggleBuilderDot(3)">3</button>
+                        <button class="builder-dot-btn" id="bdot-6" onclick="toggleBuilderDot(6)">6</button>
+                    </div>
 
-                    <div class="interactive-tester-grid">
-                        <div class="test-dots-columns">
-                            <button class="test-dot-button" id="tdot-1" onclick="toggleTestDot(1)">1</button>
-                            <button class="test-dot-button" id="tdot-4" onclick="toggleTestDot(4)">4</button>
-                            <button class="test-dot-button" id="tdot-2" onclick="toggleTestDot(2)">2</button>
-                            <button class="test-dot-button" id="tdot-5" onclick="toggleTestDot(5)">5</button>
-                            <button class="test-dot-button" id="tdot-3" onclick="toggleTestDot(3)">3</button>
-                            <button class="test-dot-button" id="tdot-6" onclick="toggleTestDot(6)">6</button>
-                        </div>
-
-                        <div class="test-result-card">
-                            <div class="result-character-huge" id="studio-test-char">?</div>
-                            <div class="result-meta-info">
-                                <h4 id="studio-test-name">Select dots to test</h4>
-                                <p id="studio-test-pattern">Pattern: [ 0, 0, 0, 0, 0, 0 ]</p>
-                            </div>
-                            <button class="servo-quick-btn" onclick="clearTestCell()" style="flex: 0; min-width: 80px;">Reset</button>
-                        </div>
+                    <div class="builder-output-summary">
+                        <span class="builder-big-letter" id="builder-char-result">A</span>
+                        <span class="builder-bitmask-pill" id="builder-bitmask-label">Mask: 0b000001</span>
+                        <button class="braille-play-btn" style="margin-top: 0.5rem;" onclick="sendCustomBuilderLetter()">Send to ESP32</button>
                     </div>
                 </div>
 
-                <!-- Complete Clickable Braille Alphabet & Digit Dictionary -->
-                <div class="studio-card-panel">
-                    <h3 style="font-family: var(--font-heading); font-size: 1.05rem;">English Braille Dictionary (A-Z, 0-9)</h3>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">Tap any character to test on physical actuator and play haptics.</p>
-                    <div class="dictionary-grid" id="braille-alphabet-grid">
-                        <!-- Populated by app.js -->
-                    </div>
+                <div class="section-marker-row">
+                    <span class="section-marker-title">Grade-1 UEB Dictionary</span>
+                    <span class="section-marker-badge">Tap to Actuate</span>
                 </div>
 
-                <!-- SIH 2026 Documentation Accordion -->
-                <div class="studio-card-panel">
-                    <h3 style="font-family: var(--font-heading); font-size: 1.05rem;">SIH 2026 Specifications</h3>
-                    
-                    <div class="doc-accordion-card">
-                        <h3>Problem Statement (SIH26215)</h3>
-                        <p>1.5B+ people worldwide live with hearing loss and 2.2B+ with vision impairment. Existing refreshable Braille hardware costs ₹1.5L to ₹4L. EchoBraille bridges conversational AI and the deafblind community via an open-standard ₹1,500 6-dot actuator.</p>
-                    </div>
-
-                    <div class="doc-accordion-card">
-                        <h3>Hardware BOM (≈ ₹1,500 INR)</h3>
-                        <ul>
-                            <li>ESP32 Microcontroller: ₹380 ($4.50)</li>
-                            <li>PCA9685 16-Channel 12-Bit PWM Driver: ₹180 ($2.15)</li>
-                            <li>6x Micro SG90 9g Servos: ₹720 ($8.60)</li>
-                            <li>0.96" SSD1306 / SH1106 OLED: ₹160 ($1.90)</li>
-                            <li>3D Printed Tactile Braille Cap: ₹60 ($0.70)</li>
-                        </ul>
-                    </div>
+                <!-- Searchable Alphabet Cards -->
+                <div class="dictionary-grid" id="alphabet-dictionary-container">
+                    <!-- Dynamic Dictionary Cards Generated by JS -->
                 </div>
 
             </div>
         </section>
-
-        <!-- Hidden pane-docs container for compatibility -->
-        <section class="view-panel tab-pane hidden" id="pane-docs"></section>
 
     </main>
 
     <!-- ==========================================
-         FIXED MOBILE BOTTOM NAVIGATION DOCK
+         SIGNATURE BOTTOM NAVIGATION DOCK (EXACT REFERENCE 1 MATCH!)
+         Active tab = Sunset Orange Pill [ 📅 LINEUP ]
          ========================================== -->
-    <nav class="bottom-nav-dock" aria-label="Bottom Navigation">
-        <div class="bottom-nav-inner">
-            <button class="dock-tab-btn nav-btn active" id="nav-assistant-btn" onclick="switchTab('assistant')">
-                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 3a7 7 0 0 0-7 7c0 3.866 3.134 7 7 7s7-3.134 7-7a7 7 0 0 0-7-7zm0 2.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z"/></svg>
-                <span>Assistant</span>
+    <nav class="neo-bottom-dock">
+        <div class="dock-content-row">
+            <button class="dock-item-btn active" id="dock-btn-assistant" onclick="switchTab('assistant')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                <span class="dock-item-label">Assistant</span>
             </button>
 
-            <button class="dock-tab-btn nav-btn" id="nav-actuator-btn" onclick="switchTab('actuator')">
-                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm-5-9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm10 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm-5 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>
-                <span>Actuator</span>
+            <button class="dock-item-btn" id="dock-btn-actuator" onclick="switchTab('actuator')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span class="dock-item-label">Actuator</span>
             </button>
 
-            <button class="dock-tab-btn nav-btn" id="nav-hardware-btn" onclick="switchTab('hardware')">
-                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a2 2 0 0 1 2 2v2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4V4a2 2 0 0 1 2-2h4z"/></svg>
-                <span>Hardware</span>
+            <button class="dock-item-btn" id="dock-btn-hardware" onclick="switchTab('hardware')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4.93 4.93a10 10 0 0 1 14.14 0M7.76 7.76a6 6 0 0 1 8.48 0M12 12h.01"/><path d="M12 12v6"/></svg>
+                <span class="dock-item-label">Hardware</span>
             </button>
 
-            <button class="dock-tab-btn nav-btn" id="nav-studio-btn" onclick="switchTab('studio')">
-                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16v16H4V4zm2 2v12h14V6H6zm2 3h4v4H8V9zm6 0h4v4h-4V9zm-6 6h4v4H8v-4zm6 0h4v4h-4v-4z"/></svg>
-                <span>Studio</span>
+            <button class="dock-item-btn" id="dock-btn-studio" onclick="switchTab('studio')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+                <span class="dock-item-label">Studio</span>
             </button>
         </div>
     </nav>
 
     <!-- ==========================================
-         SETTINGS MODAL (BOTTOM SHEET ON MOBILE)
+         SETTINGS BOTTOM SHEET MODAL
          ========================================== -->
     <div class="modal-overlay hidden" id="settings-modal" onclick="if(event.target === this) closeSettingsModal()">
-        <div class="modal-sheet">
-            <div class="modal-header-row">
-                <h3>Preferences & Accessibility</h3>
-                <button class="header-icon-btn" onclick="closeSettingsModal()">✕</button>
+        <div class="modal-sheet-card">
+            <div class="modal-header-strip">
+                <h3 class="modal-header-title">App Preferences</h3>
+                <button class="header-icon-circle" onclick="closeSettingsModal()">✕</button>
             </div>
-            <div class="modal-content-list">
-                <div class="setting-tile">
-                    <label for="haptic-toggle">Phone Haptic Vibration on Braille Dots</label>
+            <div class="modal-body-list">
+                <div class="setting-row">
+                    <label for="haptic-toggle">Phone Haptic Vibration on Dots</label>
                     <input type="checkbox" id="haptic-toggle" checked>
                 </div>
-                <div class="setting-tile">
-                    <label for="servo-sound-toggle">Simulated Servo Sound Feedback</label>
+                <div class="setting-row">
+                    <label for="servo-sound-toggle">Audio Click Feedback</label>
                     <input type="checkbox" id="servo-sound-toggle" checked>
                 </div>
-                <div class="setting-tile">
-                    <label for="auto-speech-toggle">Auto-read AI Responses Aloud (TTS)</label>
+                <div class="setting-row">
+                    <label for="auto-speech-toggle">Auto-read AI Responses (TTS)</label>
                     <input type="checkbox" id="auto-speech-toggle">
                 </div>
-                <div class="setting-tile">
+                <div class="setting-row">
                     <label for="gemini-api-key-input">Gemini API Key (Optional)</label>
-                    <input type="password" id="gemini-api-key-input" placeholder="AI Studio Key..." style="width: 140px;">
+                    <input type="password" id="gemini-api-key-input" placeholder="Google AI Studio key...">
                 </div>
-                <div class="setting-tile">
-                    <label for="dot-height-select">Tactile Pin Elevation Height</label>
+                <div class="setting-row">
+                    <label for="dot-height-select">Tactile Pin Height</label>
                     <select id="dot-height-select">
                         <option value="high">High (4.0mm)</option>
                         <option value="standard" selected>Standard (2.5mm)</option>
@@ -533,13 +426,13 @@
                     </select>
                 </div>
             </div>
-            <div class="modal-footer-row">
-                <button class="btn-touch btn-touch-primary" style="min-height: 42px; width: auto; padding: 0.5rem 1.5rem;" onclick="saveSettings()">Save Preferences</button>
+            <div class="modal-footer-strip">
+                <button class="primary-action-pill" style="min-width: 140px;" onclick="saveSettings()">Save Changes</button>
             </div>
         </div>
     </div>
 
-    <!-- Client Script -->
+    <!-- Main Logic Script -->
     <script src="app.js"></script>
 </body>
 </html>

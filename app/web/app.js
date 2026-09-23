@@ -1,5 +1,6 @@
 /* ==========================================================================
-   ECHOBRAILLE — APPLICATION LOGIC & HARDWARE CONTROLLER (app.js)
+   ECHOBRAILLE — APPLICATION CONTROLLER & HARDWARE ENGINE (app.js)
+   Modern Neo-Pop Edition with Dual-Mode Capacitor/Web Support
    ========================================================================== */
 
 // --- Native App Environment Helper (Capacitor) ---
@@ -25,17 +26,16 @@ const state = {
     // AI & Speech State
     isListening: false,
     speechRecognition: null,
-    geminiApiKey: 'YOUR_GEMINI_API_KEY', // Default placeholder or user provided
+    geminiApiKey: '',
     
     // Playback & Stream State
-    currentTextStream: "",
+    currentTextStream: "ECHOBRAILLE",
     currentCharIndex: 0,
     isPlaying: false,
     playbackTimer: null,
-    refreshSpeedMs: 1000, // Speed per letter (matches LETTER_TIME in ino)
+    refreshSpeedMs: 800, // Speed per letter (0.8s default)
     
     // 6-Dot Braille Mapping Table (Standard Grade 1)
-    // Matches echobraille_bluetooth.ino servo mapping & bitwise layout
     brailleMap: {
         'A': [true,  false, false, false, false, false],
         'B': [true,  true,  false, false, false, false],
@@ -63,7 +63,7 @@ const state = {
         'X': [true,  false, true,  true,  false, true ],
         'Y': [true,  false, true,  true,  true,  true ],
         'Z': [true,  false, true,  false, true,  true ],
-        '1': [true,  false, false, false, false, false], // Digits match A-J with # sign
+        '1': [true,  false, false, false, false, false],
         '2': [true,  true,  false, false, false, false],
         '3': [true,  false, false, true,  false, false],
         '4': [true,  false, false, true,  true,  false],
@@ -73,50 +73,90 @@ const state = {
         '8': [true,  true,  false, false, true,  false],
         '9': [false, true,  false, true,  false, false],
         '0': [false, true,  false, true,  true,  false],
-        '#': [false, false, true,  true,  true,  true ], // Number sign
-        ' ': [false, false, false, false, false, false]  // Space
+        '#': [false, false, true,  true,  true,  true ],
+        ' ': [false, false, false, false, false, false]
     },
     
-    // Interactive Studio Test Dots
-    studioDots: [false, false, false, false, false, false]
+    // Interactive Studio Builder Dots
+    builderDots: [true, false, false, false, false, false]
 };
 
-// --- Initialization on DOM Loaded ---
+// --- Initialization on DOM Ready ---
 document.addEventListener('DOMContentLoaded', () => {
     initSpeechRecognition();
-    populateBrailleStudioChart();
-    logSerial("[SYS] EchoBraille App Ready. Load echobraille_bluetooth.ino onto ESP32.");
+    populateBrailleDictionary();
+    updateBuilderPreview();
+    updateActuatorUI('A', state.brailleMap['A']);
 });
 
-// --- Tab Switching ---
+// --- Tab Navigation & Synchronization ---
 function switchTab(tabId) {
     state.currentTab = tabId;
-    
-    // Update navigation button active state
-    document.querySelectorAll('.dock-tab-btn, .nav-btn').forEach(btn => btn.classList.remove('active'));
-    const activeBtn = document.getElementById(`nav-${tabId}-btn`);
-    if (activeBtn) activeBtn.classList.add('active');
-    
-    // Update tab panes
-    document.querySelectorAll('.view-panel, .tab-pane').forEach(pane => {
-        pane.classList.remove('active');
-        pane.classList.add('hidden');
+
+    // 1. Update Bottom Dock Buttons (active orange pill)
+    document.querySelectorAll('.dock-item-btn').forEach(btn => btn.classList.remove('active'));
+    const dockBtn = document.getElementById(`dock-btn-${tabId}`);
+    if (dockBtn) dockBtn.classList.add('active');
+
+    // 2. Update Top Segmented Control (active black pill)
+    document.querySelectorAll('.segmented-pill-btn').forEach(btn => btn.classList.remove('active'));
+    const segBtn = document.getElementById(`seg-btn-${tabId}`);
+    if (segBtn) segBtn.classList.add('active');
+
+    // 3. Update View Panels
+    document.querySelectorAll('.view-panel').forEach(panel => {
+        panel.classList.remove('active');
+        panel.style.display = 'none';
     });
-    const activePane = document.getElementById(`pane-${tabId}`);
-    if (activePane) {
-        activePane.classList.remove('hidden');
-        activePane.classList.add('active');
+    const activePanel = document.getElementById(`pane-${tabId}`);
+    if (activePanel) {
+        activePanel.style.display = 'block';
+        activePanel.classList.add('active');
     }
+
+    // 4. Update Hot Pink Subheader Strip
+    updatePinkBanner(tabId);
 }
 
-function connectHardwareModal() {
-    switchTab('hardware');
+function updatePinkBanner(tabId) {
+    const tagsContainer = document.getElementById('pink-category-tags');
+    const liveStatusText = document.getElementById('pink-live-status-text');
+    if (!tagsContainer) return;
+
+    if (tabId === 'assistant') {
+        tagsContainer.innerHTML = `
+            <span class="pink-tag-item active">Speech & AI</span>
+            <span class="pink-tag-item">Tactile Queue</span>
+            <span class="pink-tag-item">Direct Spell</span>
+        `;
+        if (liveStatusText) liveStatusText.textContent = "Gemini Active";
+    } else if (tabId === 'actuator') {
+        tagsContainer.innerHTML = `
+            <span class="pink-tag-item active">Physical 6-Pin</span>
+            <span class="pink-tag-item">SH1106 OLED</span>
+            <span class="pink-tag-item">Diff Engine</span>
+        `;
+        if (liveStatusText) liveStatusText.textContent = "Servo Ready";
+    } else if (tabId === 'hardware') {
+        tagsContainer.innerHTML = `
+            <span class="pink-tag-item active">Nordic UART BLE</span>
+            <span class="pink-tag-item">WebSerial</span>
+            <span class="pink-tag-item">PCA9685 PWM</span>
+        `;
+        if (liveStatusText) liveStatusText.textContent = "Port 0x40";
+    } else if (tabId === 'studio') {
+        tagsContainer.innerHTML = `
+            <span class="pink-tag-item active">Interactive Builder</span>
+            <span class="pink-tag-item">Grade-1 UEB</span>
+            <span class="pink-tag-item">SIH Specs</span>
+        `;
+        if (liveStatusText) liveStatusText.textContent = "Cell 2x3";
+    }
 }
 
 // --- High Contrast & Settings Modals ---
 function toggleHighContrast() {
     document.body.classList.toggle('high-contrast');
-    logSerial("[UI] Toggled High Contrast Mode");
 }
 
 function openSettingsModal() {
@@ -138,23 +178,19 @@ function saveSettings() {
         if (enteredKey) {
             localStorage.setItem('gemini_api_key', enteredKey);
             state.geminiApiKey = enteredKey;
-            logSerial("[AI] Gemini API Key saved to local storage.");
         } else {
             localStorage.removeItem('gemini_api_key');
             state.geminiApiKey = '';
-            logSerial("[AI] Using built-in offline rule engine (No API Key).");
         }
     }
     closeSettingsModal();
 }
 
-// --- Speech Recognition (Web Speech API & Capacitor Native Speech Recognition) ---
+// --- Speech Recognition ---
 function initSpeechRecognition() {
     if (isNativeApp() && window.Capacitor?.Plugins?.SpeechRecognition) {
-        logSerial("[NATIVE] Android Speech Recognition plugin ready.");
         return;
     }
-
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         state.speechRecognition = new SpeechRecognition();
@@ -164,9 +200,8 @@ function initSpeechRecognition() {
 
         state.speechRecognition.onstart = () => {
             state.isListening = true;
-            document.getElementById('mic-active-overlay').classList.remove('hidden');
-            document.getElementById('mic-button').classList.add('recording');
-            document.getElementById('hero-mic-label').textContent = "Listening...";
+            const micBtn = document.getElementById('mic-button');
+            if (micBtn) micBtn.classList.add('listening');
         };
 
         state.speechRecognition.onresult = (event) => {
@@ -174,29 +209,25 @@ function initSpeechRecognition() {
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 transcript += event.results[i][0].transcript;
             }
-            document.getElementById('chat-input-field').value = transcript;
-            document.getElementById('mic-listening-text').textContent = `"${transcript}"`;
+            const inputField = document.getElementById('chat-input-field');
+            if (inputField) inputField.value = transcript;
         };
 
-        state.speechRecognition.onerror = (event) => {
-            console.error("Speech Recognition Error:", event.error);
+        state.speechRecognition.onerror = () => {
             stopVoiceInput();
         };
 
         state.speechRecognition.onend = () => {
             stopVoiceInput();
-            const inputVal = document.getElementById('chat-input-field').value.trim();
-            if (inputVal.length > 0) {
+            const inputVal = document.getElementById('chat-input-field')?.value.trim();
+            if (inputVal && inputVal.length > 0) {
                 handleUserMessage();
             }
         };
-    } else {
-        console.warn("Web Speech API not supported in standard browser mode.");
     }
 }
 
 async function startVoiceInput() {
-    // Native Capacitor Android Speech Recognition
     if (isNativeApp() && window.Capacitor?.Plugins?.SpeechRecognition) {
         const SpeechPlugin = window.Capacitor.Plugins.SpeechRecognition;
         try {
@@ -204,18 +235,15 @@ async function startVoiceInput() {
             if (!hasPerm.speechRecognition) {
                 await SpeechPlugin.requestPermissions();
             }
-
             state.isListening = true;
-            document.getElementById('mic-active-overlay').classList.remove('hidden');
-            document.getElementById('mic-button').classList.add('recording');
-            document.getElementById('hero-mic-label').textContent = "Listening...";
+            document.getElementById('mic-button')?.classList.add('listening');
 
             SpeechPlugin.removeAllListeners?.();
             SpeechPlugin.addListener('partialResults', (data) => {
                 if (data.matches && data.matches.length > 0) {
                     const transcript = data.matches[0];
-                    document.getElementById('chat-input-field').value = transcript;
-                    document.getElementById('mic-listening-text').textContent = `"${transcript}"`;
+                    const input = document.getElementById('chat-input-field');
+                    if (input) input.value = transcript;
                 }
             });
 
@@ -229,45 +257,38 @@ async function startVoiceInput() {
 
             if (result && result.matches && result.matches.length > 0) {
                 const finalTranscript = result.matches[0];
-                document.getElementById('chat-input-field').value = finalTranscript;
+                const input = document.getElementById('chat-input-field');
+                if (input) input.value = finalTranscript;
             }
             stopVoiceInput();
-            const inputVal = document.getElementById('chat-input-field').value.trim();
-            if (inputVal.length > 0) {
+            const inputVal = document.getElementById('chat-input-field')?.value.trim();
+            if (inputVal && inputVal.length > 0) {
                 handleUserMessage();
             }
-        } catch (nativeErr) {
-            console.error("Native speech recognition error:", nativeErr);
-            logSerial(`[ERR] Speech failed: ${nativeErr.message || nativeErr}`);
+        } catch (err) {
+            console.error("Native speech recognition error:", err);
             stopVoiceInput();
         }
         return;
     }
 
-    // Standard Browser Web Speech API
     if (state.speechRecognition) {
         try {
             state.speechRecognition.start();
-        } catch (e) {
-            console.warn("Speech recognition already active.");
-        }
+        } catch (e) {}
     } else {
-        alert("Speech recognition is not supported on your current browser. Please type your query.");
+        alert("Speech recognition not supported on this browser. Please type your query.");
     }
 }
 
 async function stopVoiceInput() {
     state.isListening = false;
-    document.getElementById('mic-active-overlay').classList.add('hidden');
-    document.getElementById('mic-button').classList.remove('recording');
-    document.getElementById('hero-mic-label').textContent = "Speak to AI";
+    document.getElementById('mic-button')?.classList.remove('listening');
 
     if (isNativeApp() && window.Capacitor?.Plugins?.SpeechRecognition) {
-        try {
-            await window.Capacitor.Plugins.SpeechRecognition.stop();
-        } catch(e) {}
+        try { await window.Capacitor.Plugins.SpeechRecognition.stop(); } catch(e) {}
     } else if (state.speechRecognition) {
-        try { state.speechRecognition.stop(); } catch(e){}
+        try { state.speechRecognition.stop(); } catch(e) {}
     }
 }
 
@@ -279,57 +300,60 @@ function toggleVoiceInput() {
     }
 }
 
-// --- Messaging & AI Chat Stream ---
+// --- Messaging & AI Intent ---
 function sendQuickPrompt(text) {
-    document.getElementById('chat-input-field').value = text;
+    const input = document.getElementById('chat-input-field');
+    if (input) input.value = text;
     handleUserMessage();
 }
 
 async function handleUserMessage() {
     const inputField = document.getElementById('chat-input-field');
-    const userQuery = inputField.value.trim();
+    const userQuery = inputField?.value.trim();
     if (!userQuery) return;
 
-    // Append User Message to UI
     appendMessageBubble('user', userQuery);
     inputField.value = '';
 
-    // Show AI Thinking State
-    const aiBubbleId = appendMessageBubble('ai', 'Thinking... converting to Braille stream...');
+    const aiBubbleId = appendMessageBubble('ai', 'Thinking... translating to Braille tactile stream...');
 
     try {
-        // Query AI Model (Gemini 1.5 Flash API or Simulated Intelligent Response)
         const aiResponseText = await generateAIResponse(userQuery);
         updateMessageBubble(aiBubbleId, aiResponseText);
 
         // Load into Braille Tactile Stream Queue
         loadBrailleStream(aiResponseText);
-        
-        // Auto-play stream
         startBrailleStream();
     } catch (err) {
-        updateMessageBubble(aiBubbleId, `Sorry, I encountered an error: ${err.message}`);
+        updateMessageBubble(aiBubbleId, `Error: ${err.message}`);
     }
 }
 
 function appendMessageBubble(sender, text) {
     const container = document.getElementById('chat-messages-container');
     if (!container) return null;
-    
-    const bubbleId = `msg-${Date.now()}`;
-    const bubbleDiv = document.createElement('div');
-    bubbleDiv.className = `chat-message-row ${sender}`;
-    bubbleDiv.id = bubbleId;
 
-    const avatarText = sender === 'ai' ? 'AI' : 'YOU';
-    bubbleDiv.innerHTML = `
-        <div class="chat-avatar ${sender}">${avatarText}</div>
-        <div class="bubble-body">
-            <p>${escapeHTML(text)}</p>
+    const bubbleId = `msg-${Date.now()}`;
+    const row = document.createElement('div');
+    row.className = `msg-card-row ${sender}`;
+    row.id = bubbleId;
+
+    const authorTitle = sender === 'ai' ? 'EchoBraille AI' : 'YOU';
+    row.innerHTML = `
+        <div class="msg-card-bubble ${sender}">
+            <div class="msg-card-header">
+                <span class="msg-author-pill">${authorTitle}</span>
+                <span class="msg-card-time">NOW</span>
+            </div>
+            <div class="msg-body-text">${escapeHTML(text)}</div>
+            ${sender === 'ai' ? `
+            <div class="msg-braille-box">
+                <span class="braille-stream-text">Translating to tactile pins...</span>
+            </div>` : ''}
         </div>
     `;
 
-    container.appendChild(bubbleDiv);
+    container.appendChild(row);
     container.scrollTop = container.scrollHeight;
     return bubbleId;
 }
@@ -337,8 +361,13 @@ function appendMessageBubble(sender, text) {
 function updateMessageBubble(bubbleId, newText) {
     const bubble = document.getElementById(bubbleId);
     if (bubble) {
-        const p = bubble.querySelector('.bubble-body p');
-        if (p) p.innerHTML = escapeHTML(newText);
+        const bodyText = bubble.querySelector('.msg-body-text');
+        if (bodyText) bodyText.innerHTML = escapeHTML(newText);
+
+        const brailleBox = bubble.querySelector('.braille-stream-text');
+        if (brailleBox) {
+            brailleBox.textContent = `QUEUE: "${newText.substring(0, 24)}${newText.length > 24 ? '...' : ''}"`;
+        }
     }
 }
 
@@ -348,161 +377,70 @@ function escapeHTML(str) {
     );
 }
 
-// --- AI Response Generator (Live Gemini 1.5 Flash API + Offline Fallback) ---
+// --- Gemini Flash AI Engine with Sub-10ms Offline Fallback ---
 async function generateAIResponse(prompt) {
-    const apiKey = localStorage.getItem('gemini_api_key') || state.geminiApiKey;
-
-    // If an API key is provided, query Google Gemini 1.5 Flash API
-    if (apiKey && apiKey !== 'YOUR_GEMINI_API_KEY' && apiKey.trim().length > 10) {
+    const apiKey = state.geminiApiKey || localStorage.getItem('gemini_api_key');
+    if (apiKey) {
         try {
-            logSerial("[AI] Querying Google Gemini 1.5 Flash API...");
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}`;
-            
-            const payload = {
-                contents: [
-                    {
-                        parts: [
-                            {
-                                text: `You are EchoBraille AI, an assistive voice-to-Braille assistant for deafblind users. Answer the query concisely in under 15 words using simple English words only. No markdown, no emojis, no special symbols. Query: "${prompt}"`
-                            }
-                        ]
-                    }
-                ],
-                generationConfig: {
-                    maxOutputTokens: 35,
-                    temperature: 0.2
-                }
-            };
-
-            const response = await fetch(endpoint, {
+            const systemPrompt = "You are EchoBraille AI, an assistive voice-to-Braille system for deafblind users. Answer concisely in under 15 words using simple English words only. No emojis, no markdown.";
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    contents: [{ role: "user", parts: [{ text: `${systemPrompt}\nUser: ${prompt}` }] }],
+                    generationConfig: { maxOutputTokens: 35, temperature: 0.2 }
+                })
             });
-
-            if (response.ok) {
-                const data = await response.json();
-                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-                if (aiText) {
-                    logSerial(`[AI] Gemini Flash responded: "${aiText}"`);
-                    return aiText.replace(/[*_#~`]/g, '').trim();
-                }
-            } else {
-                const errData = await response.json().catch(() => ({}));
-                console.warn("Gemini API Error:", errData);
-                logSerial(`[AI] API returned ${response.status}: Falling back to local engine.`);
+            const data = await response.json();
+            if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+                return data.candidates[0].content.parts[0].text.trim();
             }
-        } catch (err) {
-            console.error("Gemini fetch error:", err);
-            logSerial(`[AI] Fetch error: ${err.message}. Using offline fallback.`);
+        } catch (e) {
+            console.warn("Online Gemini API request failed, falling back to local engine.");
         }
     }
 
-    // --- Fast Local Offline Knowledge Base (< 10ms response) ---
-    const lower = prompt.toLowerCase().trim();
-
-    // 1. Time & Date (Live Dynamic Evaluation)
-    if (lower.includes("time")) {
-        const now = new Date();
-        return `The current time is ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`;
+    // Local Sub-10ms Intent Engine
+    const lower = prompt.toLowerCase();
+    if (lower.includes("what is braille") || lower.includes("explain braille")) {
+        return "Braille is a 6-dot tactile code read with fingertips.";
     }
-    if (lower.includes("date") || lower.includes("today")) {
-        const now = new Date();
-        return `Today is ${now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}.`;
-    }
-
-    // 2. Greetings & Identity
-    if (lower.startsWith("hi") || lower.startsWith("hello") || lower.includes("hey")) {
-        return "Hello! I am EchoBraille. How can I help you today?";
-    }
-    if (lower.includes("who are you") || lower.includes("what is your name")) {
-        return "I am EchoBraille, an AI Voice to 6-dot tactile assistive platform.";
-    }
-    if (lower.includes("how are you")) {
-        return "I am functioning well and ready to translate tactile Braille.";
-    }
-
-    // 3. Assistive & Emergency Commands
-    if (lower.includes("help") || lower.includes("emergency") || lower.includes("sos")) {
-        return "Emergency alert activated. Assistance requested.";
-    }
-    if (lower.includes("water")) {
-        return "Water requested. Please stay seated while someone assists you.";
-    }
-    if (lower.includes("doctor") || lower.includes("hospital")) {
-        return "Contacting medical assistance immediately.";
-    }
-
-    // 4. Braille & Accessibility Facts
-    if (lower.includes("what is braille")) {
-        return "Braille is a tactile writing system used by visually impaired people.";
-    }
-    if (lower.includes("who invented braille")) {
-        return "Louis Braille invented Braille in 1824.";
-    }
-    if (lower.includes("how many dots")) {
-        return "Standard Braille uses 6 dots arranged in two columns of three.";
-    }
-
-    // 5. General Knowledge & Facts
     if (lower.includes("capital of india")) {
         return "New Delhi is the capital of India.";
     }
-    if (lower.includes("capital of france")) {
-        return "Paris is the capital of France.";
+    if (lower.includes("emergency") || lower.includes("help") || lower.includes("sos")) {
+        return "Alert sent. Caregiver notified of emergency.";
     }
-    if (lower.includes("capital of usa") || lower.includes("capital of america")) {
-        return "Washington D.C. is the capital of the United States.";
+    if (lower.includes("what time") || lower.includes("current time")) {
+        return `Current time is ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`;
     }
-
-    // 6. Spelling Practice
     if (lower.startsWith("spell ")) {
-        const word = prompt.substring(6).trim().toUpperCase();
-        return word.split("").join(" ");
+        return prompt.substring(6).trim().toUpperCase().split("").join(" ");
     }
-
-    // 7. Project & Hardware Specs
-    if (lower.includes("echobraille") || lower.includes("sih") || lower.includes("hardware")) {
-        return "EchoBraille uses an ESP32, PCA9685 driver, and 6 micro servos.";
-    }
-
-    // Default Fallback: Formats any custom phrase into a clean sentence for servo testing
     return `EchoBraille translating: "${prompt}".`;
 }
 
-// --- Braille Playback & Servo Stream Engine ---
+// --- Braille Stream Playback & Actuator Controller ---
 function loadBrailleStream(text) {
     state.currentTextStream = text.toUpperCase();
     state.currentCharIndex = 0;
-    
-    document.getElementById('stream-text-display').textContent = state.currentTextStream;
-    document.getElementById('braille-progress-fill').style.width = '0%';
-    
-    // Enable playback controls
-    document.getElementById('play-pause-btn').disabled = false;
-    document.getElementById('step-prev-btn').disabled = false;
-    document.getElementById('step-next-btn').disabled = false;
-    document.getElementById('repeat-btn').disabled = false;
-    
-    logSerial(`[STREAM] Loaded stream: "${state.currentTextStream}" (${state.currentTextStream.length} chars)`);
+    const streamDisplay = document.getElementById('stream-text-display');
+    if (streamDisplay) streamDisplay.textContent = `Streaming: ${state.currentTextStream}`;
 }
 
 function startBrailleStream() {
     if (!state.currentTextStream) return;
     state.isPlaying = true;
-    updatePlayPauseUI();
-    
+    updatePlayPauseButton();
+
     if (state.playbackTimer) clearInterval(state.playbackTimer);
-    
-    // Play first letter immediately
     playCurrentCharacter();
-    
+
     state.playbackTimer = setInterval(() => {
         if (!state.isPlaying) return;
         state.currentCharIndex++;
         if (state.currentCharIndex >= state.currentTextStream.length) {
             pauseBrailleStream();
-            logSerial("[STREAM] Finished streaming entire text.");
             return;
         }
         playCurrentCharacter();
@@ -512,10 +450,10 @@ function startBrailleStream() {
 function pauseBrailleStream() {
     state.isPlaying = false;
     if (state.playbackTimer) clearInterval(state.playbackTimer);
-    updatePlayPauseUI();
+    updatePlayPauseButton();
 }
 
-function togglePlayback() {
+function toggleStreamPlayback() {
     if (state.isPlaying) {
         pauseBrailleStream();
     } else {
@@ -523,645 +461,250 @@ function togglePlayback() {
     }
 }
 
-function updatePlayPauseUI() {
-    const playIcon = document.getElementById('play-icon');
-    const pauseIcon = document.getElementById('pause-icon');
+function updatePlayPauseButton() {
+    const btn = document.getElementById('play-pause-btn');
+    if (btn) {
+        btn.innerHTML = state.isPlaying ? `<span>⏸ Pause Stream</span>` : `<span>▶ Start Stream</span>`;
+    }
+}
+
+function setSpeedPreset(speedSec, btn) {
+    state.refreshSpeedMs = speedSec * 1000;
+    document.querySelectorAll('.speed-pill-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
     if (state.isPlaying) {
-        playIcon.classList.add('hidden');
-        pauseIcon.classList.remove('hidden');
-    } else {
-        playIcon.classList.remove('hidden');
-        pauseIcon.classList.add('hidden');
+        startBrailleStream();
     }
 }
 
-function stepBraille(delta) {
-    pauseBrailleStream();
-    state.currentCharIndex += delta;
-    if (state.currentCharIndex < 0) state.currentCharIndex = 0;
-    if (state.currentCharIndex >= state.currentTextStream.length) {
-        state.currentCharIndex = state.currentTextStream.length - 1;
-    }
-    playCurrentCharacter();
-}
-
-function restartBrailleStream() {
-    state.currentCharIndex = 0;
-    startBrailleStream();
-}
-
-function updateRefreshSpeed(val) {
-    state.refreshSpeedMs = parseInt(val, 10);
-    document.getElementById('speed-value-text').textContent = `${(state.refreshSpeedMs / 1000).toFixed(1)}s / char`;
-    if (state.isPlaying) {
-        startBrailleStream(); // Restart timer with new speed interval
-    }
-}
-
-// --- Servo & OLED Renderer for Current Character ---
 function playCurrentCharacter() {
     if (!state.currentTextStream) return;
-    
     const char = state.currentTextStream[state.currentCharIndex];
-    const progressPct = ((state.currentCharIndex + 1) / state.currentTextStream.length) * 100;
-    document.getElementById('braille-progress-fill').style.width = `${progressPct}%`;
-    document.getElementById('current-char-badge').textContent = `Char: ${char} (${state.currentCharIndex + 1}/${state.currentTextStream.length})`;
-    
-    // Get 6-dot boolean pattern from mapping table
-    let dots = state.brailleMap[char] || state.brailleMap[' '];
-    
-    // Update Interactive 6-Pin Physical Actuator Display in UI
+    const total = state.currentTextStream.length;
+
+    const charBadge = document.getElementById('current-char-badge');
+    if (charBadge) charBadge.textContent = `Char: ${char}`;
+
+    const indexLabel = document.getElementById('stream-index-label');
+    if (indexLabel) indexLabel.textContent = `(${state.currentCharIndex + 1}/${total})`;
+
+    const dots = state.brailleMap[char] || state.brailleMap[' '];
     updateActuatorUI(char, dots);
-
-    // Transmit character to ESP32 hardware over WebSerial / Bluetooth
     sendHardwareTextCommand(char);
-
-    // Trigger Phone Haptic Vibration if enabled
     triggerPhoneHaptic(dots);
 }
 
 function updateActuatorUI(char, dots) {
-    // Update OLED screen simulator
-    document.getElementById('oled-char-display').textContent = char;
-    document.getElementById('oled-mode-text').textContent = "ACTIVE";
-    document.getElementById('oled-stream-preview').textContent = `Streaming: ${state.currentTextStream.substring(0, 18)}...`;
-    
-    // Unicode Braille Glyph calculation
-    const brailleGlyph = getBrailleUnicodeGlyph(dots);
-    document.getElementById('oled-braille-symbol').textContent = brailleGlyph;
-    document.getElementById('oled-binary-pattern').textContent = `Dots: [ ${dots.map(d => d ? 1 : 0).join(', ')} ]`;
+    // OLED miniature display
+    const oledChar = document.getElementById('oled-letter-char');
+    if (oledChar) oledChar.textContent = char;
 
-    // Update 6 Servo Pin Elevation states
+    const oledMode = document.getElementById('oled-mode-text');
+    if (oledMode) oledMode.textContent = "ACTIVE";
+
+    // Miniature OLED 6-dots
     for (let i = 1; i <= 6; i++) {
-        const pinBox = document.getElementById(`pin-box-${i}`);
-        const isRaised = dots[i - 1];
-        const angleSpan = document.getElementById(`servo-angle-${i}`);
-        
-        if (isRaised) {
-            pinBox.classList.add('active');
-            angleSpan.textContent = "55°"; // Matches MOVE_ANGLE in ino
-        } else {
-            pinBox.classList.remove('active');
-            angleSpan.textContent = "0°";
+        const oledDot = document.getElementById(`oled-d${i}`);
+        if (oledDot) {
+            if (dots[i - 1]) oledDot.classList.add('on');
+            else oledDot.classList.remove('on');
         }
     }
-}
 
-function getBrailleUnicodeGlyph(dots) {
-    // Unicode Braille patterns start at 0x2800
-    // Dot 1: 0x01, Dot 2: 0x02, Dot 3: 0x04, Dot 4: 0x08, Dot 5: 0x10, Dot 6: 0x20
-    let code = 0x2800;
-    if (dots[0]) code += 0x01;
-    if (dots[1]) code += 0x02;
-    if (dots[2]) code += 0x04;
-    if (dots[3]) code += 0x08;
-    if (dots[4]) code += 0x10;
-    if (dots[5]) code += 0x20;
-    return String.fromCharCode(code);
+    // 6-Pin Physical Matrix Elevation
+    for (let i = 1; i <= 6; i++) {
+        const pinUnit = document.getElementById(`pin-box-${i}`);
+        const isRaised = dots[i - 1];
+        const angleEl = document.getElementById(`angle-val-${i}`);
+
+        if (pinUnit) {
+            if (isRaised) pinUnit.classList.add('raised');
+            else pinUnit.classList.remove('raised');
+        }
+
+        if (angleEl) {
+            if (i <= 3) {
+                angleEl.textContent = isRaised ? "55°" : "0°";
+            } else {
+                angleEl.textContent = isRaised ? "125°" : "180°";
+            }
+        }
+    }
 }
 
 function triggerPhoneHaptic(dots) {
-    if (navigator.vibrate && document.getElementById('haptic-toggle').checked) {
+    if (navigator.vibrate && document.getElementById('haptic-toggle')?.checked) {
         const activeCount = dots.filter(Boolean).length;
         if (activeCount > 0) {
-            navigator.vibrate(50 * activeCount);
+            navigator.vibrate(40 * activeCount);
         }
     }
 }
 
-// --- Hardware Connection Management (WebSerial & Web Bluetooth) ---
-async function connectWebSerial() {
-    if ('serial' in navigator) {
+// --- Hardware Management (Nordic UART Service BLE & WebSerial) ---
+async function connectBluetooth() {
+    const bleBtnText = document.getElementById('ble-btn-text');
+
+    // Native Capacitor BLE
+    if (isNativeApp() && window.Capacitor?.Plugins?.BleClient) {
+        const BleClient = window.Capacitor.Plugins.BleClient;
         try {
-            state.serialPort = await navigator.serial.requestPort();
-            await state.serialPort.open({ baudRate: 115200 });
-            
-            const textEncoder = new TextEncoderStream();
-            const writableStreamClosed = textEncoder.readable.pipeTo(state.serialPort.writable);
-            state.serialWriter = textEncoder.writable.getWriter();
-            
-            state.isHardwareConnected = true;
-            state.hardwareType = 'webserial';
-            updateHardwareStatusUI(true, "ESP32 WebSerial Connected");
-            logSerial("[HW] Successfully opened WebSerial COM port at 115200 baud.");
+            await BleClient.initialize();
+            if (bleBtnText) bleBtnText.textContent = "Scanning...";
 
-            // Start background stream reader for incoming ESP32 serial logs
-            readSerialStream();
-        } catch (err) {
-            console.error("WebSerial connection error:", err);
-            logSerial(`[ERR] WebSerial failed: ${err.message}`);
-        }
-    } else {
-        alert("WebSerial is not supported in this browser. Please use Chrome, Edge, or Opera.");
-    }
-}
-
-async function readSerialStream() {
-    while (state.serialPort && state.serialPort.readable && state.isHardwareConnected) {
-        try {
-            const textDecoder = new TextDecoderStream();
-            const readableStreamClosed = state.serialPort.readable.pipeTo(textDecoder.writable);
-            const reader = textDecoder.readable.getReader();
-            let buffer = "";
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                if (value) {
-                    buffer += value;
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (const line of lines) {
-                        const trimmed = line.trim();
-                        if (trimmed) logSerial(`[ESP32] ${trimmed}`);
-                    }
-                }
-            }
-        } catch (err) {
-            console.warn("Serial read stream ended:", err);
-            break;
-        }
-    }
-}
-
-// --- Nordic UART Service (NUS) UUIDs for Web Bluetooth BLE ---
-const NORDIC_UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-const NORDIC_UART_RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Browser -> ESP32 Write
-const NORDIC_UART_TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // ESP32 -> Browser Notify
-
-// --- Thread-Safe BLE Transmit Queue & MTU Slicing ---
-let bleWriteQueue = [];
-let isBleWriting = false;
-
-async function writeBlePayload(payloadString) {
-    if (!state.bleRxCharacteristic && !(isNativeApp() && state.nativeBleDeviceId)) return;
-
-    return new Promise((resolve, reject) => {
-        bleWriteQueue.push({ payload: payloadString, resolve, reject });
-        processBleQueue();
-    });
-}
-
-async function processBleQueue() {
-    if (isBleWriting || bleWriteQueue.length === 0) return;
-    isBleWriting = true;
-
-    while (bleWriteQueue.length > 0) {
-        const item = bleWriteQueue.shift();
-        try {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(item.payload);
-            const CHUNK_SIZE = 20; // Safe Standard BLE ATT payload per packet (prevents truncation)
-
-            for (let i = 0; i < data.length; i += CHUNK_SIZE) {
-                const chunk = data.slice(i, i + CHUNK_SIZE);
-                
-                // Route to Native Capacitor BLE if running inside Android APK
-                if (isNativeApp() && state.nativeBleDeviceId && window.Capacitor?.Plugins?.BluetoothLe) {
-                    const BlePlugin = window.Capacitor.Plugins.BluetoothLe;
-                    const dataView = new DataView(chunk.buffer, chunk.byteOffset, chunk.byteLength);
-                    await BlePlugin.writeWithoutResponse({
-                        deviceId: state.nativeBleDeviceId,
-                        service: NORDIC_UART_SERVICE_UUID,
-                        characteristic: NORDIC_UART_RX_UUID,
-                        value: dataView
-                    });
-                } else if (state.bleRxCharacteristic) {
-                    if (state.bleRxCharacteristic.writeValueWithoutResponse) {
-                        await state.bleRxCharacteristic.writeValueWithoutResponse(chunk);
-                    } else {
-                        await state.bleRxCharacteristic.writeValue(chunk);
-                    }
-                }
-                
-                // Yield briefly between consecutive packets to prevent ESP32 FIFO overflow
-                if (i + CHUNK_SIZE < data.length) {
-                    await new Promise(r => setTimeout(r, 20));
-                }
-            }
-            item.resolve();
-        } catch (err) {
-            console.error("BLE queued packet transmission error:", err);
-            item.reject(err);
-        }
-    }
-
-    isBleWriting = false;
-}
-
-async function connectWebBluetooth() {
-    // 1. Check if running inside Android Native App via Capacitor
-    if (isNativeApp() && window.Capacitor?.Plugins?.BluetoothLe) {
-        const BlePlugin = window.Capacitor.Plugins.BluetoothLe;
-        try {
-            logSerial("[BLE] Initializing Native Android Bluetooth LE...");
-            await BlePlugin.initialize({ requestPermissions: true });
-
-            if (state.isHardwareConnected && state.hardwareType === 'bluetooth') {
-                logSerial("[BLE] Disconnecting previous BLE session...");
-                await disconnectHardware();
-                await new Promise(r => setTimeout(r, 300));
-            }
-
-            logSerial("[BLE] Scanning for EchoBraille (Nordic UART Service)...");
-            const device = await BlePlugin.requestDevice({
-                services: [NORDIC_UART_SERVICE_UUID],
-                optionalServices: [NORDIC_UART_SERVICE_UUID]
+            const device = await BleClient.requestDevice({
+                services: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'],
+                optionalServices: []
             });
 
-            if (!device || !device.deviceId) {
-                logSerial("[BLE] Device selection cancelled or device not found.");
-                return;
-            }
-
-            logSerial(`[BLE] Connecting to: "${device.name || device.deviceId}"...`);
-            await BlePlugin.connect({
-                deviceId: device.deviceId,
-                onDisconnect: () => onBLEDisconnected()
-            });
-
-            state.nativeBleDeviceId = device.deviceId;
-            state.bleDevice = { name: device.name || 'EchoBraille' };
-
-            // Subscribe to incoming ESP32 serial logs over TX
-            try {
-                await BlePlugin.startNotifications({
-                    deviceId: device.deviceId,
-                    service: NORDIC_UART_SERVICE_UUID,
-                    characteristic: NORDIC_UART_TX_UUID
-                }, (result) => {
-                    if (result && result.value) {
-                        let text = "";
-                        if (result.value instanceof DataView) {
-                            text = new TextDecoder().decode(result.value);
-                        } else if (typeof result.value === 'string') {
-                            text = result.value;
-                        }
-                        if (text && text.trim()) logSerial(`[ESP32] ${text.trim()}`);
-                    }
-                });
-                logSerial("[BLE] Subscribed to ESP32 TX notification stream.");
-            } catch (notifyErr) {
-                console.warn("BLE notification subscription skipped:", notifyErr);
-            }
-
-            bleWriteQueue = [];
-            isBleWriting = false;
+            await BleClient.connect(device.deviceId);
             state.isHardwareConnected = true;
             state.hardwareType = 'bluetooth';
-            updateHardwareStatusUI(true, "EchoBraille BLE Connected (Native)");
-            logSerial("[HW] Successfully connected to EchoBraille via Android Native BLE!");
+            state.nativeBleDeviceId = device.deviceId;
+
+            updateHardwareStatus(true, "ESP32 BLE Connected");
             return;
-        } catch (nativeErr) {
-            console.error("Native BLE connection error:", nativeErr);
-            logSerial(`[ERR] Native BLE failed: ${nativeErr.message || nativeErr}`);
-            alert(`Bluetooth Connection Error: ${nativeErr.message || nativeErr}\n\nPlease verify Bluetooth and Location permissions are enabled in Android settings.`);
-            updateHardwareStatusUI(false, "ESP32 Offline");
+        } catch (err) {
+            console.error("Native BLE connection error:", err);
+            updateHardwareStatus(false, "ESP32 Offline");
             return;
         }
     }
 
-    // 2. Standard Web Browser Bluetooth (Chrome, Edge, Opera)
-    if (!navigator.bluetooth) {
-        const isSecure = window.isSecureContext;
-        let errMsg = "Web Bluetooth is not supported in your current browser.";
-        if (!isSecure) {
-            errMsg += "\n\n⚠️ INSECURE CONTEXT: Web Bluetooth requires HTTPS or http://localhost.\nIf accessing via LAN IP (e.g. 192.168.x.x), please open Chrome and configure:\nchrome://flags/#unsafely-treat-insecure-origin-as-secure";
-        } else {
-            errMsg += "\n\nPlease use Google Chrome, Microsoft Edge, Opera, or Bluefy (iOS).";
-        }
-        alert(errMsg);
-        return;
-    }
-
-    // Cleanly close any existing connection before starting a new scan
-    if (state.isHardwareConnected && state.hardwareType === 'bluetooth') {
-        logSerial("[BLE] Disconnecting existing Bluetooth session...");
-        await disconnectHardware();
-        await new Promise(r => setTimeout(r, 300));
-    }
-
-    try {
-        logSerial("[BLE] Scanning for EchoBraille (NUS Service / Name)...");
-        let device = null;
+    // Web Bluetooth Browser API
+    if ('bluetooth' in navigator) {
         try {
-            // Primary attempt: Filter specifically for EchoBraille name or Nordic UART Service
-            device = await navigator.bluetooth.requestDevice({
-                filters: [
-                    { name: 'EchoBraille' },
-                    { namePrefix: 'Echo' },
-                    { services: [NORDIC_UART_SERVICE_UUID] }
-                ],
-                optionalServices: [NORDIC_UART_SERVICE_UUID]
+            if (bleBtnText) bleBtnText.textContent = "Pairing...";
+            state.bleDevice = await navigator.bluetooth.requestDevice({
+                filters: [{ namePrefix: 'EchoBraille' }, { namePrefix: 'ESP32' }],
+                optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
             });
-        } catch (filterErr) {
-            if (filterErr.name === 'NotFoundError') {
-                logSerial("[BLE] Device selection cancelled by user.");
-                return;
-            }
-            logSerial(`[BLE] Filtered scan notice: ${filterErr.message}. Trying open scan...`);
-            // Fallback attempt: Accept all devices if name filter isn't matching scan response
-            device = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: [NORDIC_UART_SERVICE_UUID]
-            });
+
+            state.bleServer = await state.bleDevice.gatt.connect();
+            const service = await state.bleServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+            state.bleRxCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
+
+            state.isHardwareConnected = true;
+            state.hardwareType = 'bluetooth';
+            updateHardwareStatus(true, "ESP32 BLE Connected");
+        } catch (err) {
+            console.warn("Web Bluetooth error:", err);
+            updateHardwareStatus(false, "ESP32 Offline");
         }
-
-        if (!device) return;
-
-        logSerial(`[BLE] Device selected: "${device.name || 'EchoBraille'}". Connecting to GATT Server...`);
-        
-        // Listen for sudden disconnection
-        device.addEventListener('gattserverdisconnected', onBLEDisconnected);
-        state.bleDevice = device;
-
-        const server = await device.gatt.connect();
-        state.bleServer = server;
-        logSerial("[BLE] Connected to GATT Server. Discovering Nordic UART Service...");
-
-        const service = await server.getPrimaryService(NORDIC_UART_SERVICE_UUID);
-        logSerial("[BLE] Found Nordic UART Service.");
-
-        // Characteristic to send commands to ESP32 (RX on device side)
-        state.bleRxCharacteristic = await service.getCharacteristic(NORDIC_UART_RX_UUID);
-        logSerial("[BLE] Initialized RX write characteristic.");
-
-        // Characteristic to receive telemetry/replies from ESP32 (TX on device side)
-        try {
-            state.bleTxCharacteristic = await service.getCharacteristic(NORDIC_UART_TX_UUID);
-            await state.bleTxCharacteristic.startNotifications();
-            state.bleTxCharacteristic.addEventListener('characteristicvaluechanged', handleBLENotification);
-            logSerial("[BLE] Subscribed to ESP32 TX notifications.");
-        } catch (txErr) {
-            console.warn("BLE TX notification setup skipped:", txErr);
-        }
-
-        // Reset write queue
-        bleWriteQueue = [];
-        isBleWriting = false;
-
-        state.isHardwareConnected = true;
-        state.hardwareType = 'bluetooth';
-        updateHardwareStatusUI(true, "EchoBraille BLE Connected");
-        logSerial("[HW] Successfully connected to EchoBraille via Web Bluetooth BLE!");
-    } catch (err) {
-        if (err.name === 'NotFoundError') {
-            logSerial("[BLE] Device selection cancelled by user.");
-        } else {
-            console.error("Bluetooth connection error:", err);
-            logSerial(`[ERR] BLE connection failed: ${err.message}`);
-            alert(`Bluetooth Connection Error: ${err.message}\n\nTips:\n1. Ensure ESP32 is powered ON.\n2. Ensure echobraille_bluetooth.ino is flashed with #define USE_BLE 1.\n3. Make sure no other phone/tab is currently connected to the ESP32.`);
-        }
-        updateHardwareStatusUI(false, "ESP32 Offline");
-    }
-}
-
-function handleBLENotification(event) {
-    const value = new TextDecoder().decode(event.target.value);
-    if (value && value.trim()) {
-        logSerial(`[ESP32-BLE] ${value.trim()}`);
-    }
-}
-
-function onBLEDisconnected() {
-    logSerial("[BLE] EchoBraille Bluetooth device disconnected.");
-    state.isHardwareConnected = false;
-    state.hardwareType = null;
-    state.bleDevice = null;
-    state.bleServer = null;
-    state.bleRxCharacteristic = null;
-    state.bleTxCharacteristic = null;
-    state.nativeBleDeviceId = null;
-    bleWriteQueue = [];
-    isBleWriting = false;
-    updateHardwareStatusUI(false, "ESP32 Offline");
-}
-
-async function disconnectHardware() {
-    if (state.hardwareType === 'bluetooth') {
-        if (isNativeApp() && state.nativeBleDeviceId && window.Capacitor?.Plugins?.BluetoothLe) {
-            try {
-                await window.Capacitor.Plugins.BluetoothLe.disconnect({
-                    deviceId: state.nativeBleDeviceId
-                });
-            } catch (e) {
-                console.warn("Native BLE disconnect warning:", e);
-            }
-            state.nativeBleDeviceId = null;
-        } else if (state.bleDevice) {
-            try {
-                if (state.bleDevice.gatt && state.bleDevice.gatt.connected) {
-                    state.bleDevice.gatt.disconnect();
-                }
-            } catch (e) {
-                console.warn("BLE disconnect warning:", e);
-            }
-        }
-    } else if (state.hardwareType === 'webserial' && state.serialPort) {
-        try {
-            if (state.serialWriter) {
-                await state.serialWriter.close();
-                state.serialWriter = null;
-            }
-            await state.serialPort.close();
-            state.serialPort = null;
-        } catch (e) {
-            console.warn("Serial port close warning:", e);
-        }
-    }
-    state.isHardwareConnected = false;
-    state.hardwareType = null;
-    state.nativeBleDeviceId = null;
-    bleWriteQueue = [];
-    isBleWriting = false;
-    updateHardwareStatusUI(false, "ESP32 Offline");
-    logSerial("[HW] Hardware disconnected.");
-}
-
-function toggleSimulatedHardware() {
-    state.isHardwareConnected = !state.isHardwareConnected;
-    state.hardwareType = state.isHardwareConnected ? 'simulated' : null;
-    
-    const btnText = document.getElementById('sim-hw-btn-text');
-    if (state.isHardwareConnected) {
-        updateHardwareStatusUI(true, "Virtual ESP32 Ready");
-        btnText.textContent = "Disable Virtual ESP32 Hardware";
-        logSerial("[HW] Enabled Virtual ESP32 Hardware Simulator.");
     } else {
-        updateHardwareStatusUI(false, "ESP32 Offline");
-        btnText.textContent = "Enable Virtual ESP32 Hardware";
-        logSerial("[HW] Disabled Virtual Hardware.");
+        alert("Web Bluetooth is not supported on this browser.");
     }
 }
 
-function updateHardwareStatusUI(isConnected, labelText) {
+function updateHardwareStatus(online, text) {
+    const badgeText = document.getElementById('hw-status-text');
     const pulseDot = document.getElementById('status-pulse-dot');
-    const labelTextEl = document.getElementById('hw-status-text');
-    const statusCircle = document.getElementById('hw-status-circle');
-    const metaTitle = document.getElementById('hw-meta-title');
-    const metaDesc = document.getElementById('hw-meta-desc');
-    const disconnectBtn = document.getElementById('disconnect-hw-btn');
+    const bleBtn = document.getElementById('ble-connect-btn');
+    const bleBtnText = document.getElementById('ble-btn-text');
 
-    if (disconnectBtn) {
-        if (isConnected) {
-            disconnectBtn.classList.remove('hidden');
-        } else {
-            disconnectBtn.classList.add('hidden');
-        }
+    if (badgeText) badgeText.textContent = online ? "ESP32 Online" : "ESP32 Offline";
+    if (pulseDot) {
+        if (online) pulseDot.classList.add('online');
+        else pulseDot.classList.remove('online');
     }
-
-    if (isConnected) {
-        pulseDot.className = "status-indicator-dot online";
-        labelTextEl.textContent = labelText;
-        statusCircle.className = "status-ring-large connected";
-        metaTitle.textContent = "ESP32 Connected & Active";
-        metaDesc.textContent = `Hardware receiving 6-dot Braille packets via ${state.hardwareType ? state.hardwareType.toUpperCase() : 'BLE'}.`;
-    } else {
-        pulseDot.className = "status-indicator-dot offline";
-        labelTextEl.textContent = "ESP32 Offline";
-        statusCircle.className = "status-ring-large disconnected";
-        metaTitle.textContent = "Device Disconnected";
-        metaDesc.textContent = "Click connect below to pair with EchoBraille ESP32 Bluetooth BLE or USB WebSerial COM port.";
+    if (bleBtn) {
+        if (online) bleBtn.classList.add('connected');
+        else bleBtn.classList.remove('connected');
+    }
+    if (bleBtnText) {
+        bleBtnText.textContent = online ? "Connected (Tap to Disconnect)" : "Scan & Connect ESP32";
     }
 }
 
 async function sendHardwareTextCommand(text) {
-    const formattedPayload = `${text}\n`; // echobraille_bluetooth.ino reads lines ending in \n
-    
-    if (state.hardwareType === 'webserial' && state.serialWriter) {
-        try {
-            await state.serialWriter.write(formattedPayload);
-            logSerial(`[TX->Serial] Sent: "${text}"`);
-        } catch (err) {
-            console.error("Serial write failed:", err);
-            logSerial(`[ERR] Serial write failed: ${err.message}`);
+    const payload = `${text}\n`;
+    if (state.hardwareType === 'bluetooth') {
+        if (isNativeApp() && state.nativeBleDeviceId) {
+            try {
+                const encoder = new TextEncoder();
+                const dataView = new DataView(encoder.encode(payload).buffer);
+                await window.Capacitor.Plugins.BleClient.write(
+                    state.nativeBleDeviceId,
+                    '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+                    '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
+                    dataView
+                );
+            } catch(e) {}
+        } else if (state.bleRxCharacteristic) {
+            try {
+                const encoder = new TextEncoder();
+                await state.bleRxCharacteristic.writeValue(encoder.encode(payload));
+            } catch(e) {}
         }
-    } else if (state.hardwareType === 'bluetooth' && (state.bleRxCharacteristic || (isNativeApp() && state.nativeBleDeviceId))) {
-        try {
-            await writeBlePayload(formattedPayload);
-            logSerial(`[TX->BLE] Sent: "${text}"`);
-        } catch (err) {
-            console.error("BLE write failed:", err);
-            logSerial(`[ERR] BLE transmission failed: ${err.message}`);
-        }
-    } else if (state.hardwareType === 'simulated') {
-        logSerial(`[TX->Virtual ESP32] Moved servos for: "${text}"`);
     }
 }
 
-function logSerial(msg) {
-    const terminal = document.getElementById('serial-terminal-output');
-    if (terminal) {
-        const line = document.createElement('div');
-        line.className = 'log-line';
-        line.textContent = `${new Date().toLocaleTimeString()} ${msg}`;
-        terminal.appendChild(line);
-        terminal.scrollTop = terminal.scrollHeight;
-    }
-}
-
-function clearSerialLog() {
-    const terminal = document.getElementById('serial-terminal-output');
-    if (terminal) terminal.innerHTML = '';
-}
-
-// --- Servo Calibration Test Buttons ---
-let servoThrottleTimer = null;
-function testSingleServo(pinIndex, angleValue) {
-    document.getElementById(`cal-val-${pinIndex}`).textContent = `${angleValue}°`;
-    if (servoThrottleTimer) clearTimeout(servoThrottleTimer);
-    servoThrottleTimer = setTimeout(() => {
-        logSerial(`[CAL] Dot ${pinIndex} -> ${angleValue}°`);
-        if (state.isHardwareConnected) {
-            sendHardwareTextCommand(`SERVO ${pinIndex} ${angleValue}`);
-        }
-    }, 60);
-}
-
-function resetAllServos(angleValue) {
-    for (let i = 1; i <= 6; i++) {
-        const slider = document.querySelectorAll('.cal-slider')[i - 1];
-        if (slider) slider.value = angleValue;
-        document.getElementById(`cal-val-${i}`).textContent = `${angleValue}°`;
-    }
-    logSerial(`[CAL] Reset all 6 servos to ${angleValue}°`);
+// --- PCA9685 Servo Calibration ---
+function calibrateServo(pin, angle) {
+    const valEl = document.getElementById(`cal-val-${pin}`);
+    if (valEl) valEl.textContent = `${angle}°`;
     if (state.isHardwareConnected) {
-        if (angleValue >= 50) {
-            sendHardwareTextCommand("UP");
-        } else {
-            sendHardwareTextCommand("DOWN");
-        }
+        sendHardwareTextCommand(`SERVO ${pin} ${angle}`);
     }
 }
 
-function runHardwareSelfTest() {
-    logSerial("[CMD] Running Hardware 6-Dot Self-Test...");
-    if (state.isHardwareConnected) {
-        sendHardwareTextCommand("TEST");
+// --- Interactive 6-Dot Builder (Studio) ---
+function toggleBuilderDot(dotNum) {
+    state.builderDots[dotNum - 1] = !state.builderDots[dotNum - 1];
+    const btn = document.getElementById(`bdot-${dotNum}`);
+    if (btn) {
+        if (state.builderDots[dotNum - 1]) btn.classList.add('active');
+        else btn.classList.remove('active');
     }
+    updateBuilderPreview();
 }
 
-// --- Studio Braille Reference Chart & Interactive Cell ---
-function toggleTestDot(dotNum) {
-    state.studioDots[dotNum - 1] = !state.studioDots[dotNum - 1];
-    const btn = document.getElementById(`tdot-${dotNum}`);
-    if (state.studioDots[dotNum - 1]) {
-        btn.classList.add('active');
-    } else {
-        btn.classList.remove('active');
-    }
-
-    // Identify character from pattern
+function updateBuilderPreview() {
     let matchedChar = '?';
-    for (const [char, pattern] of Object.entries(state.brailleMap)) {
-        if (pattern.every((val, idx) => val === state.studioDots[idx])) {
+    for (const [char, dots] of Object.entries(state.brailleMap)) {
+        if (char === '#' || char === ' ') continue;
+        if (dots.every((val, idx) => val === state.builderDots[idx])) {
             matchedChar = char;
             break;
         }
     }
 
-    document.getElementById('studio-test-char').textContent = matchedChar;
-    document.getElementById('studio-test-name').textContent = matchedChar !== '?' ? `Matched Character: "${matchedChar}"` : "Custom Dot Pattern";
-    document.getElementById('studio-test-pattern').textContent = `Dot Pattern: [ ${state.studioDots.map(d => d ? 1 : 0).join(', ')} ]`;
+    const charEl = document.getElementById('builder-char-result');
+    if (charEl) charEl.textContent = matchedChar;
 
-    if (state.isHardwareConnected) {
-        const dotPatternStr = state.studioDots.map(d => d ? 1 : 0).join(',');
-        sendHardwareTextCommand(`DOTS:${dotPatternStr}`);
-    }
+    const bitmaskVal = state.builderDots.map(d => d ? 1 : 0).join('');
+    const bitmaskEl = document.getElementById('builder-bitmask-label');
+    if (bitmaskEl) bitmaskEl.textContent = `Mask: 0b${bitmaskVal}`;
 }
 
-function clearTestCell() {
-    state.studioDots = [false, false, false, false, false, false];
-    for (let i = 1; i <= 6; i++) {
-        document.getElementById(`tdot-${i}`).classList.remove('active');
-    }
-    document.getElementById('studio-test-char').textContent = '?';
-    document.getElementById('studio-test-name').textContent = "Select dots to test";
-    document.getElementById('studio-test-pattern').textContent = "Dot Pattern: [ 0, 0, 0, 0, 0, 0 ]";
-
-    if (state.isHardwareConnected) {
-        sendHardwareTextCommand("DOWN");
-    }
+function sendCustomBuilderLetter() {
+    const charEl = document.getElementById('builder-char-result');
+    const letter = charEl?.textContent || 'A';
+    loadBrailleStream(letter);
+    startBrailleStream();
+    switchTab('actuator');
 }
 
-function populateBrailleStudioChart() {
-    const grid = document.getElementById('braille-alphabet-grid');
-    if (!grid) return;
-    
-    grid.innerHTML = '';
+// --- Grade-1 UEB Braille Alphabet Dictionary ---
+function populateBrailleDictionary() {
+    const container = document.getElementById('alphabet-dictionary-container');
+    if (!container) return;
+
+    container.innerHTML = '';
     for (const [char, dots] of Object.entries(state.brailleMap)) {
         if (char === '#' || char === ' ') continue;
-        const glyph = getBrailleUnicodeGlyph(dots);
+        const activeDots = dots.map((d, i) => d ? (i + 1) : null).filter(Boolean).join('-');
         const card = document.createElement('div');
-        card.className = 'char-card-tile';
+        card.className = 'dict-letter-card';
         card.innerHTML = `
-            <span class="tile-alpha-letter">${char}</span>
-            <span class="tile-braille-symbol">${glyph}</span>
+            <span class="dict-letter-char">${char}</span>
+            <span class="dict-letter-dots">D:${activeDots}</span>
         `;
         card.onclick = () => {
             loadBrailleStream(char);
             startBrailleStream();
             switchTab('actuator');
         };
-        grid.appendChild(card);
+        container.appendChild(card);
     }
 }
