@@ -139,12 +139,7 @@ function switchTab(tabId) {
     const dockBtn = document.getElementById(`dock-btn-${tabId}`);
     if (dockBtn) dockBtn.classList.add('active');
 
-    // 2. Synchronize Top Segmented Buttons
-    document.querySelectorAll('.segmented-pill-btn').forEach(btn => btn.classList.remove('active'));
-    const segBtn = document.getElementById(`seg-btn-${tabId}`);
-    if (segBtn) segBtn.classList.add('active');
-
-    // 3. Switch View Panels
+    // 2. Switch View Panels
     document.querySelectorAll('.view-panel').forEach(panel => {
         panel.classList.remove('active');
         panel.style.display = 'none';
@@ -153,45 +148,6 @@ function switchTab(tabId) {
     if (activePanel) {
         activePanel.style.display = 'block';
         activePanel.classList.add('active');
-    }
-
-    // 4. Update Formal Black Category Banner
-    updateCategoryBanner(tabId);
-}
-
-function updateCategoryBanner(tabId) {
-    const tagsContainer = document.getElementById('category-strip-tags');
-    const statusText = document.getElementById('strip-status-text');
-    if (!tagsContainer) return;
-
-    if (tabId === 'assistant') {
-        tagsContainer.innerHTML = `
-            <span class="black-tag-item active">Speech & AI</span>
-            <span class="black-tag-item">Tactile Queue</span>
-            <span class="black-tag-item">Direct Spell</span>
-        `;
-        if (statusText) statusText.textContent = "Gemini Active";
-    } else if (tabId === 'actuator') {
-        tagsContainer.innerHTML = `
-            <span class="black-tag-item active">Physical 6-Pin</span>
-            <span class="black-tag-item">SH1106 OLED</span>
-            <span class="black-tag-item">Diff Engine</span>
-        `;
-        if (statusText) statusText.textContent = "Servo Ready";
-    } else if (tabId === 'hardware') {
-        tagsContainer.innerHTML = `
-            <span class="black-tag-item active">Nordic UART BLE</span>
-            <span class="black-tag-item">WebSerial</span>
-            <span class="black-tag-item">PCA9685 PWM</span>
-        `;
-        if (statusText) statusText.textContent = "Port 0x40";
-    } else if (tabId === 'studio') {
-        tagsContainer.innerHTML = `
-            <span class="black-tag-item active">Interactive Builder</span>
-            <span class="black-tag-item">Grade-1 UEB</span>
-            <span class="black-tag-item">SIH Specs</span>
-        `;
-        if (statusText) statusText.textContent = "Cell 2x3";
     }
 }
 
