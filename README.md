@@ -59,14 +59,14 @@ Worldwide, over **1.5 Billion people** live with hearing loss and **2.2 Billion 
 
 ```mermaid
 flowchart LR
-    A[Spoken Voice / Type Query] --> B[Web Speech API / Browser]
-    B --> C[Gemini 1.5 Flash / Offline Engine]
-    C --> D[6-Dot Braille Translation Engine]
-    D -->|Bluetooth / WebSerial 'TEXT\n'| E[ESP32 Microcontroller]
-    E -->|I2C 0x40 PWM| F[PCA9685 16-Ch Driver]
-    E -->|I2C 0x3C| G[0.96" SSD1306 OLED Display]
-    F -->|PWM 50Hz| H[6 Micro Servos: Tactile Dots 1-6]
-    H --> I[User Senses Physical Braille via Touch]
+    A["Spoken Voice / Type Query"] --> B["Web Speech API / Browser"]
+    B --> C["Gemini 1.5 Flash / Offline Engine"]
+    C --> D["6-Dot Braille Translation Engine"]
+    D -->|"Bluetooth / WebSerial (TEXT)"| E["ESP32 Microcontroller"]
+    E -->|"I2C 0x40 PWM"| F["PCA9685 16-Ch Driver"]
+    E -->|"I2C 0x3C"| G["0.96-inch SSD1306 OLED Display"]
+    F -->|"PWM 50Hz"| H["6 Micro Servos (Tactile Dots 1-6)"]
+    H --> I["User Senses Physical Braille via Touch"]
 ```
 
 ### Key Capabilities:
@@ -84,22 +84,22 @@ The EchoBraille system is structured into two decoupled layers: the **Software/A
 
 ```mermaid
 graph TB
-    subgraph "Software Layer (Smartphone / Laptop Web App)"
-        UI[Interactive Web Interface - HTML5/CSS3]
-        STT[Browser Web Speech API]
-        AI[Gemini 1.5 Flash Cloud / Offline Fallback]
-        ENC[Grade-1 Braille Encoder & Bitmask Matrix]
-        COMM[WebSerial & Web Bluetooth GATT Client]
-        SIM[3D Tactile Pin & OLED Simulator]
+    subgraph SW ["Software Layer (Smartphone / Laptop Web App)"]
+        UI["Interactive Web Interface (HTML5 / CSS3)"]
+        STT["Browser Web Speech API"]
+        AI["Gemini 1.5 Flash Cloud / Offline Fallback"]
+        ENC["Grade-1 Braille Encoder & Bitmask Matrix"]
+        COMM["WebSerial & Web Bluetooth GATT Client"]
+        SIM["3D Tactile Pin & OLED Simulator"]
     end
 
-    subgraph "Hardware Actuator Layer (ESP32 Module)"
-        ESP[ESP32 Microcontroller Board]
-        BT[Bluetooth Nordic UART Service 6e400001 / Serial]
-        PARSER[Character & Number-Sign Parser]
-        PCA[PCA9685 12-Bit PWM Driver @ 0x40]
-        OLED[SSD1306 128x64 Monochrome OLED @ 0x3C]
-        PINS[6x Micro Servos (Channels 0-5) -> Tactile Pins]
+    subgraph HW ["Hardware Actuator Layer (ESP32 Module)"]
+        ESP["ESP32 Microcontroller Board"]
+        BT["Bluetooth Nordic UART Service / Serial"]
+        PARSER["Character & Number-Sign Parser"]
+        PCA["PCA9685 12-Bit PWM Driver (0x40)"]
+        OLED["SSD1306 128x64 Monochrome OLED (0x3C)"]
+        PINS["6x Micro Servos (Channels 0-5) to Tactile Pins"]
     end
 
     STT --> UI
@@ -107,7 +107,7 @@ graph TB
     AI --> ENC
     ENC --> SIM
     ENC --> COMM
-    COMM -->|Wireless BT BLE / USB Serial @ 115200 Baud| BT
+    COMM -->|"Wireless BT BLE / USB Serial @ 115200 Baud"| BT
     BT --> PARSER
     PARSER --> PCA
     PARSER --> OLED
