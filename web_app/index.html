@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoBraille — AI-Powered Voice-to-Braille Assistive Platform</title>
+    <meta name="description" import="Intelligent AI-based Voice-to-Braille assistive platform for deafblind communication and tactile access.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+    <!-- Top Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="brand-logo">
+                <div class="logo-icon">
+                    <span class="braille-dot d1 active"></span>
+                    <span class="braille-dot d2 active"></span>
+                    <span class="braille-dot d3 active"></span>
+                    <span class="braille-dot d4"></span>
+                    <span class="braille-dot d5"></span>
+                    <span class="braille-dot d6 active"></span>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-title">Echo<span class="highlight">Braille</span></span>
+                    <span class="brand-tagline">SIH 2026 — MedTech / Hardware</span>
+                </div>
+            </div>
+
+            <nav class="nav-links">
+                <button class="nav-btn active" id="nav-assistant-btn" onclick="switchTab('assistant')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 3a7 7 0 0 0-7 7c0 3.866 3.134 7 7 7s7-3.134 7-7a7 7 0 0 0-7-7zm0 2.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z"/></svg>
+                    <span>AI Assistant</span>
+                </button>
+                <button class="nav-btn" id="nav-hardware-btn" onclick="switchTab('hardware')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a2 2 0 0 1 2 2v2h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4V4a2 2 0 0 1 2-2h4z"/></svg>
+                    <span>ESP32 Hardware</span>
+                </button>
+                <button class="nav-btn" id="nav-studio-btn" onclick="switchTab('studio')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16v16H4V4zm2 2v12h14V6H6zm2 3h4v4H8V9zm6 0h4v4h-4V9zm-6 6h4v4H8v-4zm6 0h4v4h-4v-4z"/></svg>
+                    <span>Braille Studio</span>
+                </button>
+                <button class="nav-btn" id="nav-docs-btn" onclick="switchTab('docs')">
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                    <span>SIH Specs</span>
+                </button>
+            </nav>
+
+            <div class="nav-controls">
+                <div class="connection-badge" id="hw-status-badge">
+                    <span class="status-pulse offline" id="status-pulse-dot"></span>
+                    <span class="status-label" id="hw-status-text">ESP32 Offline</span>
+                </div>
+                <button class="icon-btn" id="high-contrast-toggle" title="Toggle High Contrast Mode" onclick="toggleHighContrast()">
+                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1 0-16v16z"/></svg>
+                </button>
+                <button class="icon-btn" id="settings-toggle" title="Settings" onclick="openSettingsModal()">
+                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="app-main">
+
+        <!-- TAB 1: AI ASSISTANT & REAL-TIME TACTILE SIMULATOR -->
+        <section class="tab-pane active" id="pane-assistant">
+
+            <!-- Hero Banner -->
+            <div class="hero-card">
+                <div class="hero-content">
+                    <span class="hero-badge">AI-Powered Tactile Interface</span>
+                    <h1 class="hero-title">Bridging AI & Deafblind Communication</h1>
+                    <p class="hero-subtitle">Converts real-time voice and conversational AI queries into physical 6-dot Braille tactile feedback with zero visual or auditory dependency.</p>
+                </div>
+                <div class="hero-actions">
+                    <button class="btn btn-primary" onclick="connectHardwareModal()">
+                        <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+                        <span>Connect ESP32 Module</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="startVoiceInput()">
+                        <svg class="btn-icon mic-pulse" viewBox="0 0 24 24"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+                        <span id="hero-mic-label">Speak to AI</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Interactive Workplace Grid -->
+            <div class="workspace-grid">
+                
+                <!-- Left Panel: Voice & Chat Column -->
+                <div class="panel-card chat-panel">
+                    <div class="panel-header">
+                        <div class="panel-title-group">
+                            <svg class="panel-title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+                            <h3>Voice & AI Chat Stream</h3>
+                        </div>
+                        <div class="chat-status-indicator">
+                            <span class="dot-online"></span> AI Connected
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages Log -->
+                    <div class="chat-scroll-area" id="chat-messages-container">
+                        <!-- Initial System Welcome Message -->
+                        <div class="chat-bubble ai-bubble">
+                            <div class="avatar ai-avatar">AI</div>
+                            <div class="bubble-content">
+                                <p>Hello! I am your <strong>EchoBraille AI Assistant</strong>. Ask me any question using your voice or keyboard, and I will instantly convert the response into physical 6-dot Braille tactile signals.</p>
+                                <div class="quick-prompts">
+                                    <button class="chip-btn" onclick="sendQuickPrompt('Explain what Braille is in 2 simple sentences.')">"What is Braille?"</button>
+                                    <button class="chip-btn" onclick="sendQuickPrompt('What is the capital of India?')">"Capital of India?"</button>
+                                    <button class="chip-btn" onclick="sendQuickPrompt('Spell HELLO in Braille.')">"Spell HELLO"</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Voice Waveform & Microphone Status Overlay -->
+                    <div class="mic-wave-container hidden" id="mic-active-overlay">
+                        <div class="mic-wave-bar b1"></div>
+                        <div class="mic-wave-bar b2"></div>
+                        <div class="mic-wave-bar b3"></div>
+                        <div class="mic-wave-bar b4"></div>
+                        <div class="mic-wave-bar b5"></div>
+                        <span class="mic-status-label" id="mic-listening-text">Listening... Speak clearly into microphone</span>
+                        <button class="icon-btn close-mic-btn" onclick="stopVoiceInput()">✕</button>
+                    </div>
+
+                    <!-- Chat Input Box -->
+                    <div class="chat-input-bar">
+                        <button class="mic-trigger-btn" id="mic-button" title="Start Speech Recognition" onclick="toggleVoiceInput()">
+                            <svg class="mic-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+                        </button>
+                        <input type="text" id="chat-input-field" placeholder="Type query or speak into microphone..." autocomplete="off">
+                        <button class="send-trigger-btn" id="send-btn" onclick="handleUserMessage()">
+                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Physical 6-Dot Braille Actuator & Telemetry Simulator -->
+                <div class="panel-card braille-simulator-panel">
+                    <div class="panel-header">
+                        <div class="panel-title-group">
+                            <svg class="panel-title-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm-5-9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm10 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm-5 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>
+                            <h3>6-Dot Tactile Hardware Actuator</h3>
+                        </div>
+                        <span class="tag-badge" id="current-char-badge">Char: —</span>
+                    </div>
+
+                    <!-- Interactive 6-Pin Physical Servo Actuator Display -->
+                    <div class="actuator-stage">
+                        
+                        <!-- 6-Dot Physical Servo Pins Grid (Standard 2x3 Layout) -->
+                        <div class="tactile-cell-wrapper">
+                            <div class="tactile-cell" id="tactile-braille-cell">
+                                <!-- Column 1: Dots 1, 2, 3 -->
+                                <div class="dot-column">
+                                    <div class="servo-pin-container" id="pin-box-1" data-dot="1">
+                                        <div class="pin-cap">1</div>
+                                        <div class="pin-shaft"></div>
+                                        <div class="pin-servo-base">
+                                            <span class="servo-angle" id="servo-angle-1">0°</span>
+                                        </div>
+                                    </div>
+                                    <div class="servo-pin-container" id="pin-box-2" data-dot="2">
+                                        <div class="pin-cap">2</div>
+                                        <div class="pin-shaft"></div>
+                                        <div class="pin-servo-base">
+                                            <span class="servo-angle" id="servo-angle-2">0°</span>
+                                        </div>
+                                    </div>
+                                    <div class="servo-pin-container" id="pin-box-3" data-dot="3">
+                                        <div class="pin-cap">3</div>
+                                        <div class="pin-shaft"></div>
+                                        <div class="pin-servo-base">
+                                            <span class="servo-angle" id="servo-angle-3">0°</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Column 2: Dots 4, 5, 6 -->
+                                <div class="dot-column">
+                                    <div class="servo-pin-container" id="pin-box-4" data-dot="4">
+                                        <div class="pin-cap">4</div>
+                                        <div class="pin-shaft"></div>
+                                        <div class="pin-servo-base">
+                                            <span class="servo-angle" id="servo-angle-4">0°</span>
+                                        </div>
+                                    </div>
+                                    <div class="servo-pin-container" id="pin-box-5" data-dot="5">
+                                        <div class="pin-cap">5</div>
+                                        <div class="pin-shaft"></div>
+                                        <div class="pin-servo-base">
+                                            <span class="servo-angle" id="servo-angle-5">0°</span>
+                                        </div>
+                                    </div>
+                                    <div class="servo-pin-container" id="pin-box-6" data-dot="6">
+                                        <div class="pin-cap">6</div>
+                                        <div class="pin-shaft"></div>
+                                        <div class="pin-servo-base">
+                                            <span class="servo-angle" id="servo-angle-6">0°</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Hardware OLED Display Simulator (On-Device Screen) -->
+                            <div class="oled-screen-simulator">
+                                <div class="oled-header">
+                                    <span class="oled-brand">SH1106 OLED 128x64</span>
+                                    <span class="oled-mode" id="oled-mode-text">STANDBY</span>
+                                </div>
+                                <div class="oled-body">
+                                    <div class="oled-char-large" id="oled-char-display">?</div>
+                                    <div class="oled-details">
+                                        <div class="oled-braille-glyph" id="oled-braille-symbol">⠠</div>
+                                        <div class="oled-dots-pattern" id="oled-binary-pattern">Dots: [ 0, 0, 0, 0, 0, 0 ]</div>
+                                    </div>
+                                </div>
+                                <div class="oled-footer">
+                                    <span id="oled-stream-preview">EchoBraille ESP32 Ready</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Braille Stream Progress Bar & Navigation Controls -->
+                        <div class="stream-control-card">
+                            <div class="text-stream-preview">
+                                <span class="stream-label">Text Stream:</span>
+                                <div class="stream-buffer" id="stream-text-display">Waiting for AI response or query...</div>
+                            </div>
+
+                            <div class="progress-bar-container">
+                                <div class="progress-fill" id="braille-progress-fill" style="width: 0%;"></div>
+                            </div>
+
+                            <div class="playback-toolbar">
+                                <button class="play-btn-circle" id="play-pause-btn" onclick="togglePlayback()" disabled>
+                                    <svg id="play-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+                                    <svg id="pause-icon" class="hidden" viewBox="0 0 24 24"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                                </button>
+                                <button class="control-btn" id="step-prev-btn" onclick="stepBraille(-1)" disabled title="Previous Character">
+                                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                                </button>
+                                <button class="control-btn" id="step-next-btn" onclick="stepBraille(1)" disabled title="Next Character">
+                                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                                </button>
+                                <button class="control-btn" id="repeat-btn" onclick="restartBrailleStream()" disabled title="Repeat Stream">
+                                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                                </button>
+
+                                <div class="speed-slider-group">
+                                    <span class="speed-label">Refresh Speed:</span>
+                                    <input type="range" id="refresh-speed-slider" min="300" max="2500" step="100" value="1000" oninput="updateRefreshSpeed(this.value)">
+                                    <span class="speed-value" id="speed-value-text">1.0s / char</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TAB 2: ESP32 HARDWARE CONTROLLER & WIRELESS TELEMETRY -->
+        <section class="tab-pane hidden" id="pane-hardware">
+            <div class="section-header">
+                <h2>ESP32 Controller & Hardware Management</h2>
+                <p>Wireless Bluetooth / WebSerial interface connecting the EchoBraille web app to the physical PCA9685 6-servo Braille module.</p>
+            </div>
+
+            <div class="hardware-grid">
+                
+                <!-- Card 1: Wireless Connection Control -->
+                <div class="hw-card">
+                    <div class="hw-card-header">
+                        <svg class="hw-card-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/></svg>
+                        <h3>ESP32 Bluetooth / WebSerial Connect</h3>
+                    </div>
+                    <div class="hw-card-body">
+                        <div class="connection-status-box" id="hw-detailed-status">
+                            <div class="status-indicator-big disconnected" id="hw-status-circle"></div>
+                            <div class="status-meta">
+                                <h4 id="hw-meta-title">Device Disconnected</h4>
+                                <p id="hw-meta-desc">Pair wirelessly with EchoBraille BLE or connect via USB / Bluetooth Serial COM port.</p>
+                            </div>
+                        </div>
+
+                        <div class="hw-connect-actions">
+                            <button class="btn btn-primary btn-full" id="btn-connect-ble" onclick="connectWebBluetooth()">
+                                <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/></svg>
+                                <span>Pair Web Bluetooth BLE</span>
+                            </button>
+                            <button class="btn btn-secondary btn-full" id="btn-connect-serial" onclick="connectWebSerial()">
+                                <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></svg>
+                                <span>Connect USB / BT WebSerial</span>
+                            </button>
+                            <button class="btn btn-danger btn-full hidden" id="disconnect-hw-btn" onclick="disconnectHardware()">
+                                <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                                <span>Disconnect Hardware</span>
+                            </button>
+                            <button class="btn btn-outline btn-full" onclick="toggleSimulatedHardware()">
+                                <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                                <span id="sim-hw-btn-text">Enable Virtual ESP32 Hardware</span>
+                            </button>
+                        </div>
+                        <div class="hw-tip-box" style="margin-top: 12px; padding: 10px 12px; background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.15); border-radius: 8px; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">
+                            <strong style="color: var(--accent-cyan);">💡 Bluetooth Tips:</strong><br>
+                            • <strong>Web Bluetooth (BLE):</strong> Click "Pair Web Bluetooth BLE" directly in Chrome / Edge without OS pairing (uses Nordic UART Service).<br>
+                            • <strong>Bluetooth Classic (SPP):</strong> Pair "EchoBraille" in Windows / phone settings first, then click "Connect USB / BT WebSerial" and select its assigned COM port.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Servo Motor Calibration & PWM Controls -->
+                <div class="hw-card">
+                    <div class="hw-card-header">
+                        <svg class="hw-card-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M22 9V7h-2V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2v-2h-2V9h2zm-4 10H4V5h14v14zM6 7h5v5H6V7zm0 6h5v4H6v-4zm7-6h3v3h-3V7zm0 5h3v6h-3v-6z"/></svg>
+                        <h3>PCA9685 Servo Pin Calibration</h3>
+                    </div>
+                    <div class="hw-card-body">
+                        <p class="section-desc">Adjust zero-position (Retracted: 0°) and active-position (Elevated: 90°) PWM pulse widths for the 6 micro servos.</p>
+                        
+                        <div class="servo-calibration-list">
+                            <div class="servo-cal-item">
+                                <span class="cal-label">Dot 1 (Top-Left):</span>
+                                <input type="range" min="0" max="180" value="90" class="cal-slider" oninput="testSingleServo(1, this.value)">
+                                <span class="cal-angle-val" id="cal-val-1">90°</span>
+                            </div>
+                            <div class="servo-cal-item">
+                                <span class="cal-label">Dot 2 (Mid-Left):</span>
+                                <input type="range" min="0" max="180" value="90" class="cal-slider" oninput="testSingleServo(2, this.value)">
+                                <span class="cal-angle-val" id="cal-val-2">90°</span>
+                            </div>
+                            <div class="servo-cal-item">
+                                <span class="cal-label">Dot 3 (Bot-Left):</span>
+                                <input type="range" min="0" max="180" value="90" class="cal-slider" oninput="testSingleServo(3, this.value)">
+                                <span class="cal-angle-val" id="cal-val-3">90°</span>
+                            </div>
+                            <div class="servo-cal-item">
+                                <span class="cal-label">Dot 4 (Top-Right):</span>
+                                <input type="range" min="0" max="180" value="90" class="cal-slider" oninput="testSingleServo(4, this.value)">
+                                <span class="cal-angle-val" id="cal-val-4">90°</span>
+                            </div>
+                            <div class="servo-cal-item">
+                                <span class="cal-label">Dot 5 (Mid-Right):</span>
+                                <input type="range" min="0" max="180" value="90" class="cal-slider" oninput="testSingleServo(5, this.value)">
+                                <span class="cal-angle-val" id="cal-val-5">90°</span>
+                            </div>
+                            <div class="servo-cal-item">
+                                <span class="cal-label">Dot 6 (Bot-Right):</span>
+                                <input type="range" min="0" max="180" value="90" class="cal-slider" oninput="testSingleServo(6, this.value)">
+                                <span class="cal-angle-val" id="cal-val-6">90°</span>
+                            </div>
+                        </div>
+
+                        <div class="cal-btn-group">
+                            <button class="btn btn-sm btn-secondary" onclick="resetAllServos(0)">Retract All Pins (0°)</button>
+                            <button class="btn btn-sm btn-primary" onclick="resetAllServos(90)">Elevate All Pins (90°)</button>
+                            <button class="btn btn-sm btn-outline" onclick="runHardwareSelfTest()">Run 6-Dot Self-Test</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Real-Time Hardware Telemetry -->
+                <div class="hw-card">
+                    <div class="hw-card-header">
+                        <svg class="hw-card-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                        <h3>Hardware Telemetry & Battery</h3>
+                    </div>
+                    <div class="hw-card-body">
+                        <div class="telemetry-grid">
+                            <div class="telem-item">
+                                <span class="telem-label">ESP32 Core Temp</span>
+                                <span class="telem-val" id="telem-temp">38.4 °C</span>
+                            </div>
+                            <div class="telem-item">
+                                <span class="telem-label">Supply Voltage</span>
+                                <span class="telem-val" id="telem-volts">3.72 V (LiPo)</span>
+                            </div>
+                            <div class="telem-item">
+                                <span class="telem-label">BLE Signal (RSSI)</span>
+                                <span class="telem-val" id="telem-rssi">-64 dBm</span>
+                            </div>
+                            <div class="telem-item">
+                                <span class="telem-label">Latency / Delay</span>
+                                <span class="telem-val" id="telem-latency">18 ms</span>
+                            </div>
+                            <div class="telem-item">
+                                <span class="telem-label">I2C Bus Speed</span>
+                                <span class="telem-val">400 kHz (Fast Mode)</span>
+                            </div>
+                            <div class="telem-item">
+                                <span class="telem-label">Braille Module Cost</span>
+                                <span class="telem-val highlight-green">≈ ₹1,500 INR</span>
+                            </div>
+                        </div>
+
+                        <!-- Hardware Serial Terminal Log -->
+                        <div class="terminal-box">
+                            <div class="terminal-header">
+                                <span>ESP32 Serial Monitor (115200 Baud)</span>
+                                <button class="btn-text-sm" onclick="clearSerialLog()">Clear</button>
+                            </div>
+                            <div class="terminal-log" id="serial-terminal-output">
+                                <div class="log-line">[SYS] EchoBraille Hardware Interface v1.0 Ready</div>
+                                <div class="log-line">[I2C] PCA9685 Servo Driver Initialized at 0x40</div>
+                                <div class="log-line">[OLED] SH1106 Display Initialized 128x64</div>
+                                <div class="log-line">[BLE] EchoBraille_BLE Server Listening...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TAB 3: BRAILLE DICTIONARY & TACTILE LEARNING STUDIO -->
+        <section class="tab-pane hidden" id="pane-studio">
+            <div class="section-header">
+                <h2>Braille Dictionary & Tactile Studio</h2>
+                <p>Interactive learning studio for mastering 6-dot Grade-1 English Braille code, numbers, and special symbols.</p>
+            </div>
+
+            <div class="studio-container">
+                <!-- Interactive Braille Cell Builder -->
+                <div class="studio-card builder-card">
+                    <h3>Interactive Dot-to-Letter Tester</h3>
+                    <p>Click on any of the 6 dots below to toggle them ON/OFF and discover which Braille character is formed!</p>
+
+                    <div class="interactive-tester-cell">
+                        <div class="test-col">
+                            <button class="test-dot-btn" id="tdot-1" onclick="toggleTestDot(1)">Dot 1</button>
+                            <button class="test-dot-btn" id="tdot-2" onclick="toggleTestDot(2)">Dot 2</button>
+                            <button class="test-dot-btn" id="tdot-3" onclick="toggleTestDot(3)">Dot 3</button>
+                        </div>
+                        <div class="test-col">
+                            <button class="test-dot-btn" id="tdot-4" onclick="toggleTestDot(4)">Dot 4</button>
+                            <button class="test-dot-btn" id="tdot-5" onclick="toggleTestDot(5)">Dot 5</button>
+                            <button class="test-dot-btn" id="tdot-6" onclick="toggleTestDot(6)">Dot 6</button>
+                        </div>
+                    </div>
+
+                    <div class="test-result-box">
+                        <div class="res-char" id="studio-test-char">?</div>
+                        <div class="res-info">
+                            <h4 id="studio-test-name">Select dots to test</h4>
+                            <p id="studio-test-pattern">Dot Pattern: [ 0, 0, 0, 0, 0, 0 ]</p>
+                        </div>
+                        <button class="btn btn-sm btn-secondary" onclick="clearTestCell()">Reset Dots</button>
+                    </div>
+                </div>
+
+                <!-- Printable Full Braille Reference Chart -->
+                <div class="studio-card chart-card">
+                    <h3>Standard 6-Dot English Braille Chart (A-Z, 0-9)</h3>
+                    <div class="braille-alphabet-grid" id="braille-alphabet-grid">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: SIH 2026 SPECS & ARCHITECTURE -->
+        <section class="tab-pane hidden" id="pane-docs">
+            <div class="section-header">
+                <h2>SIH 2026 Problem Statement & Architecture Specs</h2>
+                <p>Hardware feasibility, cost analysis, and system architecture for Team EchoBraille (PS ID: SIH26215).</p>
+            </div>
+
+            <div class="docs-grid">
+                <div class="doc-card">
+                    <h3>1. Problem Statement</h3>
+                    <p>AI communicates primarily through text or voice, which remains inaccessible to deafblind users. Over 1.5 Billion people have hearing loss and 2.2 Billion have vision impairment worldwide. Existing commercial electronic Braille displays are extremely expensive (₹1.5 Lakh to ₹4 Lakhs). EchoBraille provides a portable, affordable AI-to-Braille system for independent access through touch.</p>
+                </div>
+                <div class="doc-card">
+                    <h3>2. Hardware Architecture & Feasibility</h3>
+                    <ul>
+                        <li><strong>ESP32 Microcontroller:</strong> Dual-core LX6, built-in Wi-Fi & Bluetooth BLE for low-latency wireless communication.</li>
+                        <li><strong>PCA9685 I2C Driver:</strong> 16-channel 12-bit PWM driver providing smooth independent micro-servo motor control.</li>
+                        <li><strong>6 Servo-Driven Pins:</strong> Micro SG90 / linear servos creating physical elevated tactile dots.</li>
+                        <li><strong>SH1106 OLED Display:</strong> 1.3-inch 128x64 display providing visual text confirmation for educators and companions.</li>
+                        <li><strong>Target Cost:</strong> ≈ ₹1,500 per hardware module compared to traditional displays.</li>
+                    </ul>
+                </div>
+                <div class="doc-card">
+                    <h3>3. Future Scope & Roadmap</h3>
+                    <ul>
+                        <li><strong>Multi-Character Display:</strong> Upgrading from single-cell refreshable output to multi-cell Braille strip.</li>
+                        <li><strong>Electromagnetic Actuation:</strong> Transitioning to micro-solenoids or piezoelectric actuators for faster refresh rates (< 100ms).</li>
+                        <li><strong>Multilingual Support:</strong> Grade 2 contraction Braille & regional Indian language Braille conversion (Hindi, Tamil, Marathi, etc.).</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay hidden" id="settings-modal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>EchoBraille Accessibility & Preferences</h3>
+                <button class="icon-btn" onclick="closeSettingsModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-row">
+                    <label for="haptic-toggle">Haptic Phone Vibration on Braille Dot</label>
+                    <input type="checkbox" id="haptic-toggle" checked>
+                </div>
+                <div class="setting-row">
+                    <label for="servo-sound-toggle">Simulate Servo Motor Actuation Sound</label>
+                    <input type="checkbox" id="servo-sound-toggle" checked>
+                </div>
+                <div class="setting-row">
+                    <label for="auto-speech-toggle">Auto-read AI Responses aloud</label>
+                    <input type="checkbox" id="auto-speech-toggle">
+                </div>
+                <div class="setting-row">
+                    <label for="gemini-api-key-input">Gemini API Key (Optional)</label>
+                    <input type="password" id="gemini-api-key-input" placeholder="Paste AI Studio API key..." style="background: rgba(255,255,255,0.08); border: 1px solid var(--bg-card-border); color: var(--text-main); padding: 0.4rem 0.8rem; border-radius: var(--radius-sm); font-size: 0.82rem; width: 190px;">
+                </div>
+                <div class="setting-row">
+                    <label for="dot-height-select">Tactile Pin Elevation Height</label>
+                    <select id="dot-height-select">
+                        <option value="high">High Elevation (4mm)</option>
+                        <option value="standard" selected>Standard Elevation (2.5mm)</option>
+                        <option value="low">Subtle Elevation (1.5mm)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="saveSettings()">Save Preferences</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script src="app.js"></script>
+</body>
+</html>

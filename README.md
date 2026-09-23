@@ -186,14 +186,15 @@ The firmware ([`firmware/echobraille_bluetooth/echobraille_bluetooth.ino`](file:
 
 ## 📱 Application & Software Architecture
 
-All client application files are cleanly organized in [`app/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app):
-* **Web UI ([`app/web/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/web)):**
-  - [`app/web/index.html`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/web/index.html) — Mobile-first semantic interface with fixed header & bottom dock.
-  - [`app/web/styles.css`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/web/styles.css) — Responsive dark glassmorphic design system.
-  - [`app/web/app.js`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/web/app.js) — Dual-mode controller handling Web APIs & native Android Capacitor plugins.
-* **Android Native App ([`app/android/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/android)):**
-  - Compiled APK: [`app/EchoBraille.apk`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/EchoBraille.apk) *(3.81 MB)*
-  - Target SDK: Android 14 (API Level 34)
+The EchoBraille platform is organized into two dedicated presentation layers:
+* **Dedicated Web Page ([`web_app/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/web_app)):**
+  - [`web_app/index.html`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/web_app/index.html) — Original rich dark-themed browser dashboard with full desktop navbar & multi-panel workspace.
+  - [`web_app/styles.css`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/web_app/styles.css) — Glassmorphic desktop dark theme.
+  - [`web_app/app.js`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/web_app/app.js) — Web Bluetooth BLE & USB WebSerial controller.
+* **Android Native App ([`app/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app)):**
+  - Compiled APK: [**`app/EchoBraille.apk`**](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/EchoBraille.apk) *(3.80 MB)*
+  - Mobile UI ([`app/web/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/web)): Modern Neo-Pop mobile interface with bottom dock and segmented controls.
+  - Android Studio Project ([`app/android/`](file:///c:/Users/HP/OneDrive/Desktop/Echobraille/app/android)): Complete Gradle project targeting Android 14 (API 34).
 
 ---
 
