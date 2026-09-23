@@ -1,16 +1,18 @@
 /* ==========================================================================
-   ECHOBRAILLE — APPLICATION CONTROLLER & HARDWARE ENGINE (app.js)
-   Modern Neo-Pop Edition with Dual-Mode Capacitor/Web Support
+   ECHOBRAILLE — FORMAL APPLICATION CONTROLLER & NATIVE BLE ENGINE (app.js)
+   Production Android & Web Architecture (Zero Emojis, Robust Native BLE)
    ========================================================================== */
 
-// --- Native App Environment Helper (Capacitor) ---
+// --- Native Platform Check ---
 const isNativeApp = () => {
-    return typeof window.Capacitor !== 'undefined' && 
-           typeof window.Capacitor.isNativePlatform === 'function' && 
-           window.Capacitor.isNativePlatform();
+    return (typeof window.Capacitor !== 'undefined' && 
+            typeof window.Capacitor.isNativePlatform === 'function' && 
+            window.Capacitor.isNativePlatform()) ||
+           (typeof window.capacitorCommunityBluetoothLe !== 'undefined') ||
+           (typeof window.androidBridge !== 'undefined');
 };
 
-// --- Global Application State ---
+// --- Application State ---
 const state = {
     currentTab: 'assistant',
     isHardwareConnected: false,
@@ -20,8 +22,7 @@ const state = {
     bleDevice: null,
     bleServer: null,
     bleRxCharacteristic: null,
-    bleTxCharacteristic: null,
-    nativeBleDeviceId: null, // Device ID for native Capacitor BLE
+    nativeBleDeviceId: null,
     
     // AI & Speech State
     isListening: false,
@@ -33,9 +34,9 @@ const state = {
     currentCharIndex: 0,
     isPlaying: false,
     playbackTimer: null,
-    refreshSpeedMs: 800, // Speed per letter (0.8s default)
+    refreshSpeedMs: 800,
     
-    // 6-Dot Braille Mapping Table (Standard Grade 1)
+    // 6-Dot Grade-1 Braille Bitmask Table
     brailleMap: {
         'A': [true,  false, false, false, false, false],
         'B': [true,  true,  false, false, false, false],
@@ -81,29 +82,47 @@ const state = {
     builderDots: [true, false, false, false, false, false]
 };
 
-// --- Initialization on DOM Ready ---
+// --- DOM Ready Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
     initSpeechRecognition();
     populateBrailleDictionary();
     updateBuilderPreview();
     updateActuatorUI('A', state.brailleMap['A']);
+    initNativePlugins();
 });
+
+// --- Initialize Native Plugins Silently ---
+async function initNativePlugins() {
+    if (window.capacitorCommunityBluetoothLe?.BleClient) {
+        try {
+            await window.capacitorCommunityBluetoothLe.BleClient.initialize();
+        } catch(e) {
+            console.warn("BLE client auto-init:", e);
+        }
+    } else if (window.Capacitor?.Plugins?.BluetoothLe) {
+        try {
+            await window.Capacitor.Plugins.BluetoothLe.initialize();
+        } catch(e) {
+            console.warn("Capacitor BluetoothLe plugin auto-init:", e);
+        }
+    }
+}
 
 // --- Tab Navigation & Synchronization ---
 function switchTab(tabId) {
     state.currentTab = tabId;
 
-    // 1. Update Bottom Dock Buttons (active orange pill)
-    document.querySelectorAll('.dock-item-btn').forEach(btn => btn.classList.remove('active'));
+    // 1. Synchronize 4-Column Bottom Dock
+    document.querySelectorAll('.dock-tab-item').forEach(btn => btn.classList.remove('active'));
     const dockBtn = document.getElementById(`dock-btn-${tabId}`);
     if (dockBtn) dockBtn.classList.add('active');
 
-    // 2. Update Top Segmented Control (active black pill)
+    // 2. Synchronize Top Segmented Buttons
     document.querySelectorAll('.segmented-pill-btn').forEach(btn => btn.classList.remove('active'));
     const segBtn = document.getElementById(`seg-btn-${tabId}`);
     if (segBtn) segBtn.classList.add('active');
 
-    // 3. Update View Panels
+    // 3. Switch View Panels
     document.querySelectorAll('.view-panel').forEach(panel => {
         panel.classList.remove('active');
         panel.style.display = 'none';
@@ -114,43 +133,43 @@ function switchTab(tabId) {
         activePanel.classList.add('active');
     }
 
-    // 4. Update Hot Pink Subheader Strip
-    updatePinkBanner(tabId);
+    // 4. Update Formal Black Category Banner
+    updateCategoryBanner(tabId);
 }
 
-function updatePinkBanner(tabId) {
-    const tagsContainer = document.getElementById('pink-category-tags');
-    const liveStatusText = document.getElementById('pink-live-status-text');
+function updateCategoryBanner(tabId) {
+    const tagsContainer = document.getElementById('category-strip-tags');
+    const statusText = document.getElementById('strip-status-text');
     if (!tagsContainer) return;
 
     if (tabId === 'assistant') {
         tagsContainer.innerHTML = `
-            <span class="pink-tag-item active">Speech & AI</span>
-            <span class="pink-tag-item">Tactile Queue</span>
-            <span class="pink-tag-item">Direct Spell</span>
+            <span class="black-tag-item active">Speech & AI</span>
+            <span class="black-tag-item">Tactile Queue</span>
+            <span class="black-tag-item">Direct Spell</span>
         `;
-        if (liveStatusText) liveStatusText.textContent = "Gemini Active";
+        if (statusText) statusText.textContent = "Gemini Active";
     } else if (tabId === 'actuator') {
         tagsContainer.innerHTML = `
-            <span class="pink-tag-item active">Physical 6-Pin</span>
-            <span class="pink-tag-item">SH1106 OLED</span>
-            <span class="pink-tag-item">Diff Engine</span>
+            <span class="black-tag-item active">Physical 6-Pin</span>
+            <span class="black-tag-item">SH1106 OLED</span>
+            <span class="black-tag-item">Diff Engine</span>
         `;
-        if (liveStatusText) liveStatusText.textContent = "Servo Ready";
+        if (statusText) statusText.textContent = "Servo Ready";
     } else if (tabId === 'hardware') {
         tagsContainer.innerHTML = `
-            <span class="pink-tag-item active">Nordic UART BLE</span>
-            <span class="pink-tag-item">WebSerial</span>
-            <span class="pink-tag-item">PCA9685 PWM</span>
+            <span class="black-tag-item active">Nordic UART BLE</span>
+            <span class="black-tag-item">WebSerial</span>
+            <span class="black-tag-item">PCA9685 PWM</span>
         `;
-        if (liveStatusText) liveStatusText.textContent = "Port 0x40";
+        if (statusText) statusText.textContent = "Port 0x40";
     } else if (tabId === 'studio') {
         tagsContainer.innerHTML = `
-            <span class="pink-tag-item active">Interactive Builder</span>
-            <span class="pink-tag-item">Grade-1 UEB</span>
-            <span class="pink-tag-item">SIH Specs</span>
+            <span class="black-tag-item active">Interactive Builder</span>
+            <span class="black-tag-item">Grade-1 UEB</span>
+            <span class="black-tag-item">SIH Specs</span>
         `;
-        if (liveStatusText) liveStatusText.textContent = "Cell 2x3";
+        if (statusText) statusText.textContent = "Cell 2x3";
     }
 }
 
@@ -200,8 +219,7 @@ function initSpeechRecognition() {
 
         state.speechRecognition.onstart = () => {
             state.isListening = true;
-            const micBtn = document.getElementById('mic-button');
-            if (micBtn) micBtn.classList.add('listening');
+            document.getElementById('mic-button')?.classList.add('listening');
         };
 
         state.speechRecognition.onresult = (event) => {
@@ -250,7 +268,7 @@ async function startVoiceInput() {
             const result = await SpeechPlugin.start({
                 language: "en-US",
                 maxResults: 1,
-                prompt: "Speak to EchoBraille",
+                prompt: "Speak your query",
                 partialResults: true,
                 popup: false
             });
@@ -315,7 +333,7 @@ async function handleUserMessage() {
     appendMessageBubble('user', userQuery);
     inputField.value = '';
 
-    const aiBubbleId = appendMessageBubble('ai', 'Thinking... translating to Braille tactile stream...');
+    const aiBubbleId = appendMessageBubble('ai', 'Processing text and converting to Braille stream...');
 
     try {
         const aiResponseText = await generateAIResponse(userQuery);
@@ -343,7 +361,7 @@ function appendMessageBubble(sender, text) {
         <div class="msg-card-bubble ${sender}">
             <div class="msg-card-header">
                 <span class="msg-author-pill">${authorTitle}</span>
-                <span class="msg-card-time">NOW</span>
+                <span class="msg-card-time">LIVE</span>
             </div>
             <div class="msg-body-text">${escapeHTML(text)}</div>
             ${sender === 'ai' ? `
@@ -400,7 +418,7 @@ async function generateAIResponse(prompt) {
         }
     }
 
-    // Local Sub-10ms Intent Engine
+    // Local Sub-10ms Intent Engine (No Emojis)
     const lower = prompt.toLowerCase();
     if (lower.includes("what is braille") || lower.includes("explain braille")) {
         return "Braille is a 6-dot tactile code read with fingertips.";
@@ -464,7 +482,7 @@ function toggleStreamPlayback() {
 function updatePlayPauseButton() {
     const btn = document.getElementById('play-pause-btn');
     if (btn) {
-        btn.innerHTML = state.isPlaying ? `<span>⏸ Pause Stream</span>` : `<span>▶ Start Stream</span>`;
+        btn.innerHTML = state.isPlaying ? `<span>Pause Stream</span>` : `<span>Start Stream</span>`;
     }
 }
 
@@ -541,37 +559,64 @@ function triggerPhoneHaptic(dots) {
     }
 }
 
-// --- Hardware Management (Nordic UART Service BLE & WebSerial) ---
+// --- Hardware Management (Robust Native BLE + Web Bluetooth) ---
 async function connectBluetooth() {
     const bleBtnText = document.getElementById('ble-btn-text');
 
-    // Native Capacitor BLE
-    if (isNativeApp() && window.Capacitor?.Plugins?.BleClient) {
-        const BleClient = window.Capacitor.Plugins.BleClient;
+    // 1. Native Capacitor Community Bluetooth-LE
+    if (window.capacitorCommunityBluetoothLe?.BleClient) {
+        const BleClient = window.capacitorCommunityBluetoothLe.BleClient;
         try {
+            if (bleBtnText) bleBtnText.textContent = "Scanning BLE...";
             await BleClient.initialize();
-            if (bleBtnText) bleBtnText.textContent = "Scanning...";
 
             const device = await BleClient.requestDevice({
                 services: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'],
                 optionalServices: []
             });
 
+            if (bleBtnText) bleBtnText.textContent = "Connecting...";
             await BleClient.connect(device.deviceId);
             state.isHardwareConnected = true;
             state.hardwareType = 'bluetooth';
             state.nativeBleDeviceId = device.deviceId;
 
-            updateHardwareStatus(true, "ESP32 BLE Connected");
+            updateHardwareStatus(true, "ESP32 Connected");
             return;
         } catch (err) {
-            console.error("Native BLE connection error:", err);
+            console.error("Native BleClient error:", err);
             updateHardwareStatus(false, "ESP32 Offline");
             return;
         }
     }
 
-    // Web Bluetooth Browser API
+    // 2. Native Capacitor Plugins.BluetoothLe
+    if (window.Capacitor?.Plugins?.BluetoothLe) {
+        const BlePlugin = window.Capacitor.Plugins.BluetoothLe;
+        try {
+            if (bleBtnText) bleBtnText.textContent = "Scanning BLE...";
+            await BlePlugin.initialize();
+
+            const device = await BlePlugin.requestDevice({
+                services: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
+            });
+
+            if (bleBtnText) bleBtnText.textContent = "Connecting...";
+            await BlePlugin.connect({ deviceId: device.deviceId });
+            state.isHardwareConnected = true;
+            state.hardwareType = 'bluetooth';
+            state.nativeBleDeviceId = device.deviceId;
+
+            updateHardwareStatus(true, "ESP32 Connected");
+            return;
+        } catch (err) {
+            console.error("Native BluetoothLe error:", err);
+            updateHardwareStatus(false, "ESP32 Offline");
+            return;
+        }
+    }
+
+    // 3. Desktop Web Bluetooth
     if ('bluetooth' in navigator) {
         try {
             if (bleBtnText) bleBtnText.textContent = "Pairing...";
@@ -586,13 +631,17 @@ async function connectBluetooth() {
 
             state.isHardwareConnected = true;
             state.hardwareType = 'bluetooth';
-            updateHardwareStatus(true, "ESP32 BLE Connected");
+            updateHardwareStatus(true, "ESP32 Connected");
         } catch (err) {
             console.warn("Web Bluetooth error:", err);
             updateHardwareStatus(false, "ESP32 Offline");
         }
     } else {
-        alert("Web Bluetooth is not supported on this browser.");
+        // Fallback info rather than raw error
+        if (bleBtnText) bleBtnText.textContent = "Scanning for ESP32...";
+        setTimeout(() => {
+            updateHardwareStatus(false, "ESP32 Offline");
+        }, 1500);
     }
 }
 
@@ -612,23 +661,34 @@ function updateHardwareStatus(online, text) {
         else bleBtn.classList.remove('connected');
     }
     if (bleBtnText) {
-        bleBtnText.textContent = online ? "Connected (Tap to Disconnect)" : "Scan & Connect ESP32";
+        bleBtnText.textContent = online ? "Connected (Tap to Disconnect)" : "Connect ESP32 BLE";
     }
 }
 
 async function sendHardwareTextCommand(text) {
     const payload = `${text}\n`;
     if (state.hardwareType === 'bluetooth') {
-        if (isNativeApp() && state.nativeBleDeviceId) {
+        if (window.capacitorCommunityBluetoothLe?.BleClient && state.nativeBleDeviceId) {
             try {
                 const encoder = new TextEncoder();
                 const dataView = new DataView(encoder.encode(payload).buffer);
-                await window.Capacitor.Plugins.BleClient.write(
+                await window.capacitorCommunityBluetoothLe.BleClient.write(
                     state.nativeBleDeviceId,
                     '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
                     '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
                     dataView
                 );
+            } catch(e) {}
+        } else if (window.Capacitor?.Plugins?.BluetoothLe && state.nativeBleDeviceId) {
+            try {
+                const encoder = new TextEncoder();
+                const dataView = new DataView(encoder.encode(payload).buffer);
+                await window.Capacitor.Plugins.BluetoothLe.write({
+                    deviceId: state.nativeBleDeviceId,
+                    service: '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+                    characteristic: '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
+                    value: dataView
+                });
             } catch(e) {}
         } else if (state.bleRxCharacteristic) {
             try {

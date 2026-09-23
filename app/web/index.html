@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>EchoBraille — Voice-to-Braille Tactile System</title>
-    <meta name="description" content="Intelligent AI-based Voice-to-Braille tactile assistive platform for deafblind communication.">
+    <title>EchoBraille — Voice-to-Braille Assistive System</title>
+    <meta name="description" content="Intelligent Voice-to-Braille tactile assistive system for deafblind communication.">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,127 +14,114 @@
 <body>
 
     <!-- ==========================================
-         TOP APP HEADER BAR (STATUS & BRAND)
+         TOP UTILITY BAR (STATUS & CONTROLS ONLY - NO CLUTTER)
          ========================================== -->
-    <header class="app-header">
-        <div class="header-container">
-            <div class="brand-group" onclick="switchTab('assistant')">
-                <div class="brand-glyph-circle" title="EchoBraille 6-Dot Core">
-                    <svg viewBox="0 0 24 24" fill="none">
-                        <circle cx="8" cy="6" r="2.5" fill="#48C0FF"/>
-                        <circle cx="8" cy="12" r="2.5" fill="#FF5CA8"/>
-                        <circle cx="8" cy="18" r="2.5" fill="#FF6600"/>
-                        <circle cx="16" cy="6" r="2.5" fill="#05D686"/>
-                        <circle cx="16" cy="12" r="2.5" fill="#FFFFFF"/>
-                        <circle cx="16" cy="18" r="2.5" fill="#48C0FF"/>
-                    </svg>
-                </div>
-                <div class="brand-text-col">
-                    <span class="brand-title">Echo<span class="pink-dot">Braille</span></span>
-                    <span class="brand-sub">SIH26215 • MedTech</span>
-                </div>
+    <div class="top-utility-strip">
+        <div class="utility-inner">
+            <div class="utility-brand">
+                <span class="utility-logo">EchoBraille</span>
+                <span class="utility-edition">Assistive System</span>
             </div>
-
-            <div class="header-actions">
-                <button class="header-pill-btn" id="hw-status-badge" onclick="switchTab('hardware')" title="Hardware Status">
+            <div class="utility-actions">
+                <button class="status-pill-btn" id="hw-status-badge" onclick="switchTab('hardware')" title="Hardware Status">
                     <span class="status-dot-mini" id="status-pulse-dot"></span>
                     <span id="hw-status-text">ESP32 Offline</span>
                 </button>
-                <button class="header-icon-circle" id="high-contrast-toggle" title="Toggle High Contrast Mode" onclick="toggleHighContrast()">
+                <button class="util-icon-btn" id="high-contrast-toggle" title="High Contrast Mode" onclick="toggleHighContrast()">
                     <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 0 1 0-16v16z"/></svg>
                 </button>
-                <button class="header-icon-circle" id="settings-toggle" title="Settings" onclick="openSettingsModal()">
+                <button class="util-icon-btn" id="settings-toggle" title="Settings" onclick="openSettingsModal()">
                     <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg>
                 </button>
             </div>
         </div>
-    </header>
+    </div>
 
     <!-- ==========================================
-         TOP SEGMENTED PILL BAR (EXACT REFERENCE 1: Lineup / Timeline / List)
+         TOP SEGMENTED TABS (CLEAN, NO EMOJIS)
          ========================================== -->
     <div class="segmented-nav-wrapper">
         <div class="segmented-pill-container">
             <button class="segmented-pill-btn active" id="seg-btn-assistant" onclick="switchTab('assistant')">
-                <span>💬 Assistant</span>
+                <span>Assistant</span>
             </button>
             <button class="segmented-pill-btn" id="seg-btn-actuator" onclick="switchTab('actuator')">
-                <span>⚡ Actuator</span>
+                <span>Actuator</span>
             </button>
             <button class="segmented-pill-btn" id="seg-btn-hardware" onclick="switchTab('hardware')">
-                <span>📡 Hardware</span>
+                <span>Hardware</span>
             </button>
             <button class="segmented-pill-btn" id="seg-btn-studio" onclick="switchTab('studio')">
-                <span>🔤 Studio</span>
+                <span>Studio</span>
             </button>
         </div>
     </div>
 
     <!-- ==========================================
-         SIGNATURE HOT PINK BANNER STRIP (EXACT REFERENCE 1: Thursday / Friday)
+         FORMAL BLACK SUBHEADER STRIP (NO PINK)
          ========================================== -->
-    <div class="pink-category-strip">
-        <div class="pink-strip-inner">
-            <div class="pink-strip-tags" id="pink-category-tags">
-                <span class="pink-tag-item active" id="pink-tag-1">Speech & AI</span>
-                <span class="pink-tag-item" id="pink-tag-2">Tactile Queue</span>
-                <span class="pink-tag-item" id="pink-tag-3">Direct Spell</span>
+    <div class="black-category-strip">
+        <div class="black-strip-inner">
+            <div class="black-strip-tags" id="category-strip-tags">
+                <span class="black-tag-item active">Speech & AI</span>
+                <span class="black-tag-item">Tactile Queue</span>
+                <span class="black-tag-item">Direct Spell</span>
             </div>
-            <div class="pink-live-pill">
+            <div class="black-live-pill">
                 <span class="pulsing-dot"></span>
-                <span id="pink-live-status-text">Gemini Active</span>
+                <span id="strip-status-text">Gemini Active</span>
             </div>
         </div>
     </div>
 
     <!-- ==========================================
-         MAIN APPLICATION CONTAINER
+         MAIN APPLICATION CONTENT
          ========================================== -->
     <main class="app-container">
 
         <!-- ==========================================
-             VIEW 1: ASSISTANT (CHAT, CHIPS & COMPOSER)
+             VIEW 1: ASSISTANT (CHAT & INPUT)
              ========================================== -->
         <section class="view-panel active tab-pane" id="pane-assistant">
             <div class="assistant-layout">
                 
-                <!-- Section Marker (Like 18:00 in reference) -->
+                <!-- Section Marker -->
                 <div class="section-marker-row">
                     <span class="section-marker-title">Assistive AI Stream</span>
                     <span class="section-marker-badge">Max 15 Words • Low Latency</span>
                 </div>
 
-                <!-- Quick Suggestion Chips (Horizontal Scroll) -->
+                <!-- Formal Prompt Chips (No Emojis) -->
                 <div class="chips-scroll-strip">
-                    <button class="neo-chip-btn" onclick="sendQuickPrompt('Explain what Braille is in 2 simple sentences.')">💡 What is Braille?</button>
-                    <button class="neo-chip-btn" onclick="sendQuickPrompt('What is the capital of India?')">🇮🇳 Capital of India</button>
-                    <button class="neo-chip-btn" onclick="sendQuickPrompt('Spell HELLO in Braille.')">🔤 Spell HELLO</button>
-                    <button class="neo-chip-btn" onclick="sendQuickPrompt('Help! Emergency assistance needed.')">🚨 Emergency SOS</button>
-                    <button class="neo-chip-btn" onclick="sendQuickPrompt('What time is it?')">⏰ Current Time</button>
+                    <button class="formal-chip-btn" onclick="sendQuickPrompt('Explain what Braille is in 2 simple sentences.')">What is Braille?</button>
+                    <button class="formal-chip-btn" onclick="sendQuickPrompt('What is the capital of India?')">Capital of India</button>
+                    <button class="formal-chip-btn" onclick="sendQuickPrompt('Spell HELLO in Braille.')">Spell HELLO</button>
+                    <button class="formal-chip-btn" onclick="sendQuickPrompt('Help! Emergency assistance needed.')">Emergency Alert</button>
+                    <button class="formal-chip-btn" onclick="sendQuickPrompt('What time is it?')">Current Time</button>
                 </div>
 
                 <!-- Chat Feed Card -->
                 <div class="chat-thread-card">
                     <div class="chat-thread-inner" id="chat-messages-container">
-                        <!-- AI Greeting Message Card (Sky Blue Accent like Reference 1 Lineup Highlight!) -->
+                        <!-- AI Message Row -->
                         <div class="msg-card-row ai">
                             <div class="msg-card-bubble ai">
                                 <div class="msg-card-header">
                                     <span class="msg-author-pill">EchoBraille AI</span>
-                                    <span class="msg-card-time">LIVE</span>
+                                    <span class="msg-card-time">Ready</span>
                                 </div>
                                 <div class="msg-body-text">
-                                    Welcome! Speak or type your query. Every sentence is converted into physical 6-dot Braille tactile pulses on the ESP32.
+                                    Welcome. Speak or type your query. Text will be converted into physical 6-dot Braille tactile pulses on the ESP32.
                                 </div>
                                 <div class="msg-braille-box">
-                                    <span class="braille-stream-text">READY: "HELLO" (⠓⠑⠇⠇⠕)</span>
-                                    <button class="braille-play-btn" onclick="sendQuickPrompt('Spell ECHO')">Play Demo</button>
+                                    <span class="braille-stream-text">SAMPLE: "HELLO"</span>
+                                    <button class="braille-action-btn" onclick="sendQuickPrompt('Spell ECHO')">Play Demo</button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Neo-Pop Chat Composer Bar -->
+                    <!-- Chat Composer (Inside Card, Above Dock) -->
                     <div class="chat-composer-strip">
                         <button class="composer-mic-action" id="mic-button" title="Speak to EchoBraille" onclick="toggleVoiceInput()">
                             <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
@@ -145,9 +132,6 @@
                         </button>
                     </div>
                 </div>
-
-                <!-- Hidden span for hero mic compatibility -->
-                <span id="hero-mic-label" class="hidden">Speak to AI</span>
 
             </div>
         </section>
@@ -170,32 +154,32 @@
                 <div class="tactile-matrix-container">
                     <div class="tactile-dots-grid" id="tactile-braille-cell">
                         <!-- Left Column: Dots 1, 2, 3 -->
-                        <div class="neo-pin-unit" id="pin-box-1" data-dot="1" onclick="toggleTestDot(1)">
-                            <div class="neo-pin-circle">1</div>
-                            <span class="neo-pin-angle" id="angle-val-1">0°</span>
+                        <div class="formal-pin-unit" id="pin-box-1" data-dot="1" onclick="toggleTestDot(1)">
+                            <div class="formal-pin-circle">1</div>
+                            <span class="formal-pin-angle" id="angle-val-1">0°</span>
                         </div>
                         <!-- Right Column: Dots 4, 5, 6 -->
-                        <div class="neo-pin-unit" id="pin-box-4" data-dot="4" onclick="toggleTestDot(4)">
-                            <div class="neo-pin-circle">4</div>
-                            <span class="neo-pin-angle" id="angle-val-4">180°</span>
+                        <div class="formal-pin-unit" id="pin-box-4" data-dot="4" onclick="toggleTestDot(4)">
+                            <div class="formal-pin-circle">4</div>
+                            <span class="formal-pin-angle" id="angle-val-4">180°</span>
                         </div>
 
-                        <div class="neo-pin-unit" id="pin-box-2" data-dot="2" onclick="toggleTestDot(2)">
-                            <div class="neo-pin-circle">2</div>
-                            <span class="neo-pin-angle" id="angle-val-2">0°</span>
+                        <div class="formal-pin-unit" id="pin-box-2" data-dot="2" onclick="toggleTestDot(2)">
+                            <div class="formal-pin-circle">2</div>
+                            <span class="formal-pin-angle" id="angle-val-2">0°</span>
                         </div>
-                        <div class="neo-pin-unit" id="pin-box-5" data-dot="5" onclick="toggleTestDot(5)">
-                            <div class="neo-pin-circle">5</div>
-                            <span class="neo-pin-angle" id="angle-val-5">180°</span>
+                        <div class="formal-pin-unit" id="pin-box-5" data-dot="5" onclick="toggleTestDot(5)">
+                            <div class="formal-pin-circle">5</div>
+                            <span class="formal-pin-angle" id="angle-val-5">180°</span>
                         </div>
 
-                        <div class="neo-pin-unit" id="pin-box-3" data-dot="3" onclick="toggleTestDot(3)">
-                            <div class="neo-pin-circle">3</div>
-                            <span class="neo-pin-angle" id="angle-val-3">0°</span>
+                        <div class="formal-pin-unit" id="pin-box-3" data-dot="3" onclick="toggleTestDot(3)">
+                            <div class="formal-pin-circle">3</div>
+                            <span class="formal-pin-angle" id="angle-val-3">0°</span>
                         </div>
-                        <div class="neo-pin-unit" id="pin-box-6" data-dot="6" onclick="toggleTestDot(6)">
-                            <div class="neo-pin-circle">6</div>
-                            <span class="neo-pin-angle" id="angle-val-6">180°</span>
+                        <div class="formal-pin-unit" id="pin-box-6" data-dot="6" onclick="toggleTestDot(6)">
+                            <div class="formal-pin-circle">6</div>
+                            <span class="formal-pin-angle" id="angle-val-6">180°</span>
                         </div>
                     </div>
                 </div>
@@ -229,7 +213,7 @@
                     </div>
 
                     <button class="primary-action-pill" id="play-pause-btn" onclick="toggleStreamPlayback()">
-                        <span>▶ Start Stream</span>
+                        <span>Start Stream</span>
                     </button>
                 </div>
 
@@ -243,11 +227,11 @@
             <div class="hardware-card">
 
                 <div class="hardware-hero-banner">
-                    <h3 class="hw-hero-title">ESP32 Nordic UART BLE</h3>
-                    <p class="hw-hero-desc">Connect wirelessly via Bluetooth Low Energy GATT (`6e400001-...`) or USB Serial to actuate tactile pins.</p>
-                    <button class="big-connect-pill" id="ble-connect-btn" onclick="connectBluetooth()">
+                    <h3 class="hw-hero-title">ESP32 Bluetooth LE & Serial</h3>
+                    <p class="hw-hero-desc">Connect wirelessly via Nordic UART Service BLE (UUID 6e400001) or USB Serial to actuate tactile pins.</p>
+                    <button class="formal-connect-btn" id="ble-connect-btn" onclick="connectBluetooth()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14.88 16.29L13 18.17V14.41l1.88 1.88M13 5.83l1.88 1.88L13 9.59V5.83M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4zm-2.83 8.58L13 18.17v-3.76l1.88 1.88z"/></svg>
-                        <span id="ble-btn-text">Scan & Connect ESP32</span>
+                        <span id="ble-btn-text">Connect ESP32 BLE</span>
                     </button>
                 </div>
 
@@ -257,14 +241,14 @@
                     <span class="section-marker-badge">ESP32-WROOM-32</span>
                 </div>
 
-                <!-- Neo-Pop Telemetry Tiles -->
+                <!-- Telemetry Info Tiles -->
                 <div class="telemetry-tiles-grid">
                     <div class="stat-tile-card">
-                        <span class="stat-tile-label">Battery / Power</span>
+                        <span class="stat-tile-label">Battery Voltage</span>
                         <span class="stat-tile-value" id="metric-voltage">4.18 V</span>
                     </div>
                     <div class="stat-tile-card">
-                        <span class="stat-tile-label">ESP32 Core Temp</span>
+                        <span class="stat-tile-label">Core Temperature</span>
                         <span class="stat-tile-value" id="metric-temp">37.8 °C</span>
                     </div>
                     <div class="stat-tile-card">
@@ -344,7 +328,7 @@
                     <div class="builder-output-summary">
                         <span class="builder-big-letter" id="builder-char-result">A</span>
                         <span class="builder-bitmask-pill" id="builder-bitmask-label">Mask: 0b000001</span>
-                        <button class="braille-play-btn" style="margin-top: 0.5rem;" onclick="sendCustomBuilderLetter()">Send to ESP32</button>
+                        <button class="braille-action-btn" style="margin-top: 0.5rem;" onclick="sendCustomBuilderLetter()">Send to ESP32</button>
                     </div>
                 </div>
 
@@ -364,50 +348,45 @@
     </main>
 
     <!-- ==========================================
-         SIGNATURE BOTTOM NAVIGATION DOCK (EXACT REFERENCE 1 MATCH!)
-         Active tab = Sunset Orange Pill [ 📅 LINEUP ]
+         FIXED 4-COLUMN BALANCED BOTTOM NAVIGATION DOCK (NO CLIPPING, NO OVERLAP)
          ========================================== -->
-    <nav class="neo-bottom-dock">
-        <div class="dock-content-row">
-            <button class="dock-item-btn active" id="dock-btn-assistant" onclick="switchTab('assistant')">
+    <nav class="formal-bottom-dock">
+        <div class="dock-grid-4">
+            <button class="dock-tab-item active" id="dock-btn-assistant" onclick="switchTab('assistant')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-                <span class="dock-item-label">Assistant</span>
+                <span class="dock-tab-label">Assistant</span>
             </button>
 
-            <button class="dock-item-btn" id="dock-btn-actuator" onclick="switchTab('actuator')">
+            <button class="dock-tab-item" id="dock-btn-actuator" onclick="switchTab('actuator')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                <span class="dock-item-label">Actuator</span>
+                <span class="dock-tab-label">Actuator</span>
             </button>
 
-            <button class="dock-item-btn" id="dock-btn-hardware" onclick="switchTab('hardware')">
+            <button class="dock-tab-item" id="dock-btn-hardware" onclick="switchTab('hardware')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4.93 4.93a10 10 0 0 1 14.14 0M7.76 7.76a6 6 0 0 1 8.48 0M12 12h.01"/><path d="M12 12v6"/></svg>
-                <span class="dock-item-label">Hardware</span>
+                <span class="dock-tab-label">Hardware</span>
             </button>
 
-            <button class="dock-item-btn" id="dock-btn-studio" onclick="switchTab('studio')">
+            <button class="dock-tab-item" id="dock-btn-studio" onclick="switchTab('studio')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
-                <span class="dock-item-label">Studio</span>
+                <span class="dock-tab-label">Studio</span>
             </button>
         </div>
     </nav>
 
     <!-- ==========================================
-         SETTINGS BOTTOM SHEET MODAL
+         SETTINGS MODAL (BOTTOM SHEET)
          ========================================== -->
     <div class="modal-overlay hidden" id="settings-modal" onclick="if(event.target === this) closeSettingsModal()">
         <div class="modal-sheet-card">
             <div class="modal-header-strip">
                 <h3 class="modal-header-title">App Preferences</h3>
-                <button class="header-icon-circle" onclick="closeSettingsModal()">✕</button>
+                <button class="util-icon-btn" onclick="closeSettingsModal()">✕</button>
             </div>
             <div class="modal-body-list">
                 <div class="setting-row">
                     <label for="haptic-toggle">Phone Haptic Vibration on Dots</label>
                     <input type="checkbox" id="haptic-toggle" checked>
-                </div>
-                <div class="setting-row">
-                    <label for="servo-sound-toggle">Audio Click Feedback</label>
-                    <input type="checkbox" id="servo-sound-toggle" checked>
                 </div>
                 <div class="setting-row">
                     <label for="auto-speech-toggle">Auto-read AI Responses (TTS)</label>
@@ -432,6 +411,9 @@
         </div>
     </div>
 
+    <!-- Capacitor Native Bridge Scripts -->
+    <script src="capacitor.js"></script>
+    <script src="capacitor-bluetooth-le.js"></script>
     <!-- Main Logic Script -->
     <script src="app.js"></script>
 </body>
